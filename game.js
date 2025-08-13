@@ -181,24 +181,41 @@
         if(!gameOver) requestAnimationFrame(gameLoop);
     }
 
-    window.addEventListener('keydown', e=>{
-        keysPressed[e.code]=true;
-        if(e.code==='Space'){
-            if(Date.now()-lastShotTime>200){
-                lastShotTime = Date.now();
-                if(!playerPubkey){ addLog('Register first'); return; }
-                bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 });
-                const body = { action:'shoot', player:playerPubkey.toBase58(), timestamp:Date.now(), shipX:ship.x };
-                fetch(PAYMASTER_URL,{
-                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
-                }).then(async resp=>{
-                    if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
-                    const data = await resp.json();
-                    if(data.txSignature) addLog(`Tx: ${data.txSignature}`);
-                }).catch(e=>addLog('Tx error: '+(e.message||e)));
+    window.addEventListener('keydown', async e => {
+        if(e.code === 'Space') {
+            if(!playerPubkey){ addLog('Register first'); return; }
+    
+            const body = {
+                action: 'shoot',
+                player: playerPubkey.toBase58(),
+                timestamp: Date.now(),
+                shipX: ship.x
+            };
+    
+            try {
+                const resp = await fetch(PAYMASTER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+    
+                if(!resp.ok){
+                    addLog('Paymaster error ' + resp.status);
+                    return;
+                }
+    
+                const data = await resp.json();
+                if(data.txSignature){
+                    addLog(`Tx: ${data.txSignature}`);
+                    // Chỉ push đạn khi tx thành công
+                    bullets.push({ x: ship.x + ship.width/2 - 2.5, y: ship.y - 10, width: 5, height: 10 });
+                }
+            } catch(err) {
+                addLog('Tx error: ' + (err.message || err));
             }
         }
     });
+
     window.addEventListener('keyup', e=>{ keysPressed[e.code]=false; });
 
     async function sendTx(action,value=null){
