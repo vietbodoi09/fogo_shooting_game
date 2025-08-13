@@ -2,190 +2,188 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Fogo Shooting Game</title>
 
 <!-- Favicon -->
 <link rel="icon" href="./favicon.ico" type="image/x-icon" />
 
-<!-- Google Font -->
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-
 <!-- Solana Web3.js -->
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+
 <style>
+/* Toàn bộ trang */
 body {
   margin: 0;
-  font-family: 'Orbitron', sans-serif;
+  padding: 0;
+  height: 100vh;
+  font-family: 'Audiowide', cursive;
   color: white;
   background: url('background.jpg') center/cover no-repeat fixed;
+  position: relative;
   overflow: hidden;
 }
+
+/* Lớp phủ mờ tối */
 body::before {
   content: "";
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.45);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
   z-index: -1;
 }
 
-/* Layout chính */
-.main-layout {
+/* Container chính */
+.container {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  padding: 30px;
+  align-items: flex-start;
   flex-wrap: wrap;
+  gap: 30px;
+  padding: 40px;
 }
 
-/* Box chung */
-.panel {
+/* Box chung cho Game Panel và Leaderboard */
+.game-panel, .leaderboard {
+  width: 450px;
+  min-height: 400px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
   border-radius: 20px;
-  padding: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
 
-/* Leaderboard */
-.leaderboard {
-  width: 260px;
-}
-.leaderboard h3 {
+/* Tiêu đề */
+h1, h2, h3 {
   text-align: center;
-  margin-bottom: 15px;
   text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
-}
-#leaderboardList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-#leaderboardList li {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  background: rgba(0,0,0,0.3);
-  border-radius: 8px;
-  font-size: 15px;
-  box-shadow: inset 0 0 5px rgba(255,255,255,0.1);
+  letter-spacing: 1.5px;
 }
 
-/* Game container */
-#gameContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-#game {
-  border-radius: 12px;
-  background: rgba(2,17,26,0.85);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-}
-#scoreTimer {
-  position: absolute;
-  top: 10px;
-  background: rgba(0,0,0,0.4);
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-weight: bold;
-  font-size: 18px;
-  text-shadow: 0 0 8px #000;
-}
-
-/* Game over overlay */
-#gameOverOverlay {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  background: rgba(0,0,0,0.85);
-  padding: 25px 40px;
-  border-radius: 15px;
-  text-align: center;
-  display: none;
-}
-#gameOverOverlay h2 {
-  margin-bottom: 15px;
-}
-button {
+/* Input & Button */
+input, button {
   border-radius: 12px;
   border: none;
   padding: 12px 18px;
   font-size: 16px;
-  font-weight: bold;
+  outline: none;
+  font-family: 'Audiowide', cursive;
+}
+
+button {
   background: linear-gradient(90deg, #ff4b2b, #ff416c);
   color: white;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.3s ease;
+  transition: transform 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
+  font-weight: bold;
+  box-shadow: 0 0 12px rgba(255, 65, 108, 0.6);
 }
+
 button:hover {
   transform: scale(1.07);
   background: linear-gradient(90deg, #ff416c, #ff4b2b);
+  box-shadow: 0 0 20px rgba(255, 65, 108, 0.8);
 }
+
+/* Game container */
+#gameContainer {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#game {
+  border-radius: 12px;
+  background: rgba(2, 17, 26, 0.8);
+  backdrop-filter: blur(5px);
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+#scoreTimer {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 8px;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+  text-shadow: 0 0 8px #000;
+}
+
 button:disabled {
   background: #555;
   cursor: not-allowed;
 }
 
-/* Controls Panel */
-.controls-panel {
-  width: 260px;
+/* Leaderboard đẹp hơn */
+#leaderboard {
+  width: 250px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 15px;
+  padding: 15px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
-.controls-panel input {
-  width: 100%;
-  margin-bottom: 12px;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  font-size: 14px;
+
+#leaderboardList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
-#logBox {
-  margin-top: 15px;
-  padding: 10px;
-  background: rgba(0,0,0,0.4);
-  border-radius: 10px;
-  min-height: 80px;
-  font-size: 14px;
-  overflow-y: auto;
+
+#leaderboardList li {
+  padding: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between;
+  color: #ffefef;
+}
+
+#leaderboardList li:last-child {
+  border-bottom: none;
 }
 </style>
 </head>
 <body>
-
-<div class="main-layout">
-  <!-- Leaderboard -->
-  <aside class="panel leaderboard">
-    <h3>Leaderboard</h3>
-    <ol id="leaderboardList">
-      <!-- Example -->
-      <!-- <li><span>@player</span><span>120</span></li> -->
-    </ol>
-  </aside>
-
-  <!-- Game -->
-  <div id="gameContainer" class="panel">
-    <canvas id="game" width="480" height="640"></canvas>
-    <div id="scoreTimer">Score: 0 | Time: 60</div>
-    <div id="gameOverOverlay">
-      <h2>Game Over!</h2>
-      <button id="resetBtn">Play Again</button>
+<div style="display:flex;gap:64px;align-items:flex-start;">
+    <aside id="leaderboard">
+        <h3>Leaderboard</h3>
+        <ol id="leaderboardList"></ol>
+    </aside>
+    <div id="gameContainer">
+        <canvas id="game" width="480" height="640"></canvas>
+        <div id="gameOverOverlay">
+            <h2>Game Over!</h2>
+            <button id="resetBtn">Reset Game</button>
+        </div>
+        <div id="scoreTimer">Score: 0 | Time: 60</div>
     </div>
-  </div>
-
-  <!-- Controls -->
-  <div class="panel controls-panel">
-    <input id="xInput" type="text" placeholder="Your X handle" />
-    <button id="connectBtn">Connect Wallet</button>
-    <div id="logBox"></div>
-  </div>
+    <div>
+        <div id="controlsPanel">
+            <input id="xInput" type="text" placeholder="Your X handle" />
+            <button id="connectBtn">Connect Wallet</button>
+        </div>
+        <div id="logBox"></div>
+    </div>
 </div>
 
 <script src="game.js"></script>
+
 </body>
 </html>
