@@ -48,7 +48,6 @@ body::before {
   border-radius: 20px;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: none;
 }
 
 /* Leaderboard */
@@ -58,13 +57,11 @@ body::before {
 .leaderboard h3 {
   text-align: center;
   margin-bottom: 15px;
-  text-shadow: none;
 }
 #leaderboardList {
   list-style: none;
   padding: 0;
   margin: 0;
-  
 }
 #leaderboardList li {
   display: flex;
@@ -74,16 +71,14 @@ body::before {
   background: rgba(0,0,0,0.3);
   border-radius: 8px;
   font-size: 15px;
-  box-shadow: none;
   color: #fff;
   font-weight: 600;
-  text-shadow: none;
 }
 #leaderboardList li span:first-child {
-  color: #00ffe0; /* Tên người chơi màu cyan */
+  color: #00ffe0;
 }
 #leaderboardList li span:last-child {
-  color: #ffde59; /* Điểm vàng nổi bật */
+  color: #ffde59;
 }
 
 /* Game container */
@@ -96,17 +91,17 @@ body::before {
 #game {
   border-radius: 12px;
   background: rgba(2,17,26,0.85);
-  box-shadow: none;
 }
 #scoreTimer {
   position: absolute;
   top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(0,0,0,0.4);
   padding: 5px 15px;
   border-radius: 20px;
   font-weight: bold;
   font-size: 18px;
-  text-shadow: 0 0 8px #000;
 }
 
 /* Game over overlay */
@@ -118,11 +113,22 @@ body::before {
   padding: 25px 40px;
   border-radius: 15px;
   text-align: center;
-  display: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  z-index: 5;
+  visibility: hidden; /* Ẩn mặc định */
+}
+#gameOverOverlay.visible {
+  visibility: visible;
 }
 #gameOverOverlay h2 {
-  margin-bottom: 15px;
+  margin: 0;
+  font-size: 28px;
 }
+
+/* Button style */
 button {
   border-radius: 12px;
   border: none;
@@ -165,7 +171,6 @@ button:disabled {
   overflow-y: auto;
   color: #fff;
   font-weight: 600;
-  text-shadow: none;
 }
 #logBox .logEntry {
   margin-bottom: 4px;
@@ -179,10 +184,7 @@ button:disabled {
   <!-- Leaderboard -->
   <aside class="panel leaderboard">
     <h3>Leaderboard</h3>
-    <ol id="leaderboardList">
-      <!-- Example -->
-      <!-- <li><span>@player</span><span>120</span></li> -->
-    </ol>
+    <ol id="leaderboardList"></ol>
   </aside>
 
   <!-- Game -->
@@ -206,6 +208,3 @@ button:disabled {
 <script src="game.js"></script>
 </body>
 </html>
-
-
-
