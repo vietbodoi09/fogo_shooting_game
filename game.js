@@ -4,17 +4,20 @@
     const ctx = canvas.getContext('2d');
     const scoreTimerEl = document.getElementById('scoreTimer');
     const logBox = document.getElementById('logBox');
-    const connectBtn = document.getElementById('connectBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const gameOverOverlay = document.getElementById('gameOverOverlay');
     const xInput = document.getElementById('xInput');
+    const walletInput = document.getElementById('walletInput');
+    const registerBtn = document.getElementById('registerBtn');
+    const resetBtn = document.getElementById('resetBtn');
     const leaderboardList = document.getElementById('leaderboardList');
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
 
     let playerPubkey = null, xHandle = null;
     let ship = { x: canvas.width/2-25, y: canvas.height-60, width: 50, height: 20, speed: 4 };
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
     let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {}, lastShotTime = 0;
     let enemySpawnTimer = 0, difficulty = 1;
+
+    const connection = new solanaWeb3.Connection("https://testnet.fogo.io", "confirmed");
 
     function addLog(msg) {
         const div = document.createElement('div'); 
@@ -33,20 +36,19 @@
         bullets = []; enemies = []; enemyBullets = []; particles = [];
         score = 0; timeLeft = 60000; gameOver = false;
         enemySpawnTimer = 0; difficulty = 1;
-        gameOverOverlay.classList.remove('visible');
+        gameOverOverlay.style.display = 'none';
         addLog('Game reset');
     }
 
     function spawnEnemy() {
         const size = 40; 
         const x = Math.random() * (canvas.width - size); 
-        const speed = 1 + Math.random() * (difficulty * 0.5);
+        const speed = 1 + Math.random() * difficulty;
         enemies.push({ 
             x, y: -size, width: size, height: size, speed, 
             shootTimer: 0, 
             shootInterval: 1500 + Math.random()*1000/difficulty, 
-            direction: Math.random()<0.5?1:-1,
-            id: Date.now() + Math.random() // unique id để xóa bullets khi enemy chết
+            direction: Math.random()<0.5?1:-1
         });
     }
 
@@ -97,20 +99,19 @@
     function update(delta) {
         if (gameOver) return;
 
-        // Time
         timeLeft -= delta; 
         if (timeLeft <= 0) { 
             gameOver = true; 
-            gameOverOverlay.classList.add('visible'); 
+            gameOverOverlay.style.display = 'block';
             sendTx('score', score); 
             return; 
         } 
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`; 
 
-        // Difficulty & spawn
-        difficulty = 1 + ((60000 - timeLeft)/60000 * 1.25);
+        difficulty = 1 + (60000 - timeLeft)/60000; // giảm độ khó
+
         enemySpawnTimer += delta;
-        if (enemySpawnTimer > 1500/difficulty) { 
+        if (enemySpawnTimer > 1200/difficulty) { 
             spawnEnemy(); 
             enemySpawnTimer = 0; 
         }
@@ -121,12 +122,11 @@
             if (b.y < -b.height) bullets.splice(i,1);
             enemies.forEach((e,j)=>{
                 if(isColliding(b,e)){
-                    bullets.splice(i,1); 
-                    // Xóa bullets của enemy bị hạ
-                    enemyBullets = enemyBullets.filter(eb => eb.ownerId !== e.id);
-                    enemies.splice(j,1);
+                    bullets.splice(i,1); enemies.splice(j,1);
                     score++;
                     spawnParticles(e.x+e.width/2,e.y+e.height/2,'yellow');
+                    // Remove enemy bullets hitting this enemy
+                    enemyBullets = enemyBullets.filter(eb=>!(eb.x>e.x && eb.x<e.x+e.width && eb.y>e.y && eb.y<e.y+e.height));
                 }
             });
         });
@@ -137,7 +137,7 @@
             if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
             if(isColliding(b,ship)){
                 gameOver = true;
-                gameOverOverlay.classList.add('visible');
+                gameOverOverlay.style.display = 'block';
                 sendTx('score', score);
             }
         });
@@ -151,14 +151,14 @@
             e.shootTimer += delta;
             if(e.shootTimer>e.shootInterval){
                 e.shootTimer=0;
-                const bulletSpeed = 1.3 + Math.random()*2;
-                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed, ownerId:e.id });
+                const bulletSpeed = 2 + Math.random()*2;
+                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed });
             }
 
-            // Check ship collision
-            if(isColliding(ship, e)){
+            // Ship chạm enemy
+            if(isColliding(ship,e)){
                 gameOver = true;
-                gameOverOverlay.classList.add('visible');
+                gameOverOverlay.style.display = 'block';
                 sendTx('score', score);
             }
         });
@@ -188,25 +188,24 @@
         if(e.code==='Space'){
             if(Date.now()-lastShotTime>200){
                 lastShotTime = Date.now();
-                if(!playerPubkey){ addLog('Connect wallet first'); return; }
+                if(!playerPubkey){ addLog('Register first'); return; }
+                bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 });
+                // Send shoot action to paymaster
                 const body = { action:'shoot', player:playerPubkey.toBase58(), timestamp:Date.now(), shipX:ship.x };
                 fetch(PAYMASTER_URL,{
                     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
-                })
-                .then(async resp=>{
+                }).then(async resp=>{
                     if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
                     const data = await resp.json();
                     if(data.txSignature) addLog(`Tx: ${data.txSignature}`);
-                    bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 });
-                })
-                .catch(e=>addLog('Tx error: '+(e.message||e)));
+                }).catch(e=>addLog('Tx error: '+(e.message||e)));
             }
         }
     });
     window.addEventListener('keyup', e=>{ keysPressed[e.code]=false; });
 
     async function sendTx(action,value=null){
-        if(!playerPubkey){ addLog('Connect wallet first'); return; }
+        if(!playerPubkey){ addLog('Register first'); return; }
         try{
             const body={ action, player:playerPubkey.toBase58() };
             if(action==='register' && xHandle) body.xHandle=xHandle;
@@ -232,28 +231,32 @@
         }catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
 
-    connectBtn.addEventListener('click',async ()=>{
-        xHandle = xInput.value.trim();
-        const provider = window.solana || (window.nightly && window.nightly.solana);
-        if(!provider||!provider.connect){ addLog('Wallet not found'); return; }
-        const resp = await provider.connect();
-        playerPubkey = resp.publicKey || provider.publicKey;
-        addLog('Connected: '+playerPubkey.toBase58());
-        connectBtn.disabled=true; xInput.disabled=true;
+    // Register button
+    registerBtn.addEventListener('click', async ()=>{
+        const walletAddr = walletInput.value.trim();
+        const xHandleVal = xInput.value.trim();
+        if(!walletAddr || !xHandleVal){ addLog('Enter X handle and wallet'); return; }
+
+        let pubkey;
+        try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } 
+        catch(e){ addLog('Invalid wallet address'); return; }
+
+        // check FOGO balance
+        const balance = await connection.getBalance(pubkey);
+        if(balance/1e9 < 0.1){ addLog('Wallet must have ≥0.1 FOGO'); return; }
+
+        playerPubkey = pubkey; xHandle = xHandleVal;
+
         await sendTx('register');
-        fetchLeaderboard(); 
-        resetGame(); 
+        addLog(`Registered ${xHandle} (${playerPubkey.toBase58()})`);
+        registerBtn.disabled=true; walletInput.disabled=true; xInput.disabled=true;
+
+        resetGame();
         requestAnimationFrame(gameLoop);
-
-        // Realtime leaderboard every 5s
-        setInterval(fetchLeaderboard, 5000);
     });
 
-    resetBtn.addEventListener('click',()=>{
-        resetGame(); 
-        requestAnimationFrame(gameLoop); 
-    });
+    resetBtn.addEventListener('click',()=>{ resetGame(); requestAnimationFrame(gameLoop); });
 
-    addLog('Ready. Connect wallet, use ← → to move, Space to shoot.');
+    addLog('Ready. Enter X handle & wallet, then press Register. Use ← → to move, Space to shoot.');
     fetchLeaderboard();
 })();
