@@ -95,15 +95,19 @@
 
     function update(delta) {
         if (gameOver) return;
+
+        // Update time
         timeLeft -= delta; 
         if (timeLeft <= 0) { 
+            timeLeft = 0;
             gameOver = true; 
             gameOverOverlay.classList.add('visible'); 
             sendTx('score', score); 
-            return; 
-        } 
+        }
+
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`; 
 
+        // Difficulty
         difficulty = 1 + (60000 - timeLeft)/60000 * 2;
         enemySpawnTimer += delta;
         if (enemySpawnTimer > 1000/difficulty) { 
@@ -112,28 +116,36 @@
         }
 
         // Player bullets
-        bullets.forEach((b,i)=>{
+        for(let i=bullets.length-1;i>=0;i--){
+            const b = bullets[i];
             b.y -= 8;
-            if (b.y < -b.height) bullets.splice(i,1);
-            enemies.forEach((e,j)=>{
-                if(isColliding(b,e)){
-                    bullets.splice(i,1); enemies.splice(j,1);
-                    score++;
-                    spawnParticles(e.x+e.width/2,e.y+e.height/2,'yellow');
+            if(b.y < -b.height) bullets.splice(i,1);
+            else {
+                for(let j=enemies.length-1;j>=0;j--){
+                    const e = enemies[j];
+                    if(isColliding(b,e)){
+                        bullets.splice(i,1); 
+                        enemies.splice(j,1);
+                        score++;
+                        spawnParticles(e.x+e.width/2,e.y+e.height/2,'yellow');
+                        break;
+                    }
                 }
-            });
-        });
+            }
+        }
 
         // Enemy bullets
-        enemyBullets.forEach((b,i)=>{
+        for(let i=enemyBullets.length-1;i>=0;i--){
+            const b = enemyBullets[i];
             b.y += b.speed;
             if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
-            if(isColliding(b,ship)){
+            else if(isColliding(b,ship)){
+                enemyBullets.splice(i,1);
                 gameOver = true;
                 gameOverOverlay.classList.add('visible');
                 sendTx('score', score);
             }
-        });
+        }
 
         // Enemies
         enemies.forEach(e=>{
@@ -149,11 +161,12 @@
             }
         });
 
-        // Update particles
-        particles.forEach((p,i)=>{
+        // Particles
+        for(let i=particles.length-1;i>=0;i--){
+            const p = particles[i];
             p.x += p.vx; p.y += p.vy; p.life--;
             if(p.life<=0) particles.splice(i,1);
-        });
+        }
 
         // Player movement
         if(keysPressed.ArrowLeft){ ship.x -= ship.speed; if(ship.x<0) ship.x=0; }
