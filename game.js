@@ -40,7 +40,7 @@
     function spawnEnemy() {
         const size = 40; 
         const x = Math.random() * (canvas.width - size); 
-        const speed = 1 + Math.random() * difficulty;
+        const speed = 1 + Math.random() * (difficulty * 0.5);
         enemies.push({ 
             x, y: -size, width: size, height: size, speed, 
             shootTimer: 0, 
@@ -108,9 +108,9 @@
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`; 
 
         // Difficulty & spawn
-        difficulty = 1 + (60000 - timeLeft)/60000 * 2;
+        difficulty = 1 + ((60000 - timeLeft)/60000 * 1.25);
         enemySpawnTimer += delta;
-        if (enemySpawnTimer > 1000/difficulty) { 
+        if (enemySpawnTimer > 1500/difficulty) { 
             spawnEnemy(); 
             enemySpawnTimer = 0; 
         }
@@ -151,7 +151,7 @@
             e.shootTimer += delta;
             if(e.shootTimer>e.shootInterval){
                 e.shootTimer=0;
-                const bulletSpeed = 2 + Math.random()*2;
+                const bulletSpeed = 1.3 + Math.random()*2;
                 enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed, ownerId:e.id });
             }
 
