@@ -95,7 +95,19 @@ button:disabled { background:#666;cursor:not-allowed; }
         }catch(e){ addLog('Tx error: '+(e.message||e)); }
     }
 
-    async function fetchLeaderboard(){ try{ const resp=await fetch(PAYMASTER_URL+'/leaderboard'); if(!resp.ok){ addLog('Leaderboard fetch error'); return; } const data=await resp.json(); leaderboardList.innerHTML=''; data.forEach(p=>{ const li=document.createElement('li'); li.innerHTML=`<span>${p.xHandle||p.player.slice(0,4)+'...'}</span><span>${p.score}</span>`; leaderboardList.appendChild(li); }); }catch(e){ addLog('Leaderboard error: '+(e.message||e)); } }
+    async function fetchLeaderboard(){ 
+        try{ 
+            const resp=await fetch(PAYMASTER_URL+'/leaderboard'); 
+            if(!resp.ok){ addLog('Leaderboard fetch error '+resp.status); return; } 
+            const data=await resp.json(); 
+            leaderboardList.innerHTML=''; 
+            data.forEach(p=>{ 
+                const li=document.createElement('li'); 
+                li.innerHTML=`<span>${p.xHandle||p.player.slice(0,4)+'...'}</span><span>${p.score}</span>`; 
+                leaderboardList.appendChild(li); 
+            }); 
+        }catch(e){ addLog('Leaderboard error: '+(e.message||e)); } 
+    }
 
     connectBtn.addEventListener('click',async ()=>{
         xHandle=xInput.value.trim();
@@ -105,7 +117,10 @@ button:disabled { background:#666;cursor:not-allowed; }
         playerPubkey=resp.publicKey||provider.publicKey;
         addLog('Connected: '+playerPubkey.toBase58());
         connectBtn.disabled=true; xInput.disabled=true;
-        await sendTx('register'); fetchLeaderboard(); resetGame(); requestAnimationFrame(gameLoop);
+        await sendTx('register'); 
+        fetchLeaderboard(); 
+        resetGame(); 
+        requestAnimationFrame(gameLoop);
     });
 
     resetBtn.addEventListener('click',()=>{ resetGame(); requestAnimationFrame(gameLoop); });
@@ -116,5 +131,3 @@ button:disabled { background:#666;cursor:not-allowed; }
 </script>
 </body>
 </html>
-
-
