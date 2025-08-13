@@ -36,7 +36,7 @@
         bullets = []; enemies = []; enemyBullets = []; particles = [];
         score = 0; timeLeft = 60000; gameOver = false;
         enemySpawnTimer = 0; difficulty = 1;
-        gameOverOverlay.style.display = 'none';
+        gameOverOverlay.classList.remove('visible');
         addLog('Game reset');
     }
 
@@ -102,13 +102,13 @@
         timeLeft -= delta; 
         if (timeLeft <= 0) { 
             gameOver = true; 
-            gameOverOverlay.style.display = 'block';
+            gameOverOverlay.classList.add('visible');
             sendTx('score', score); 
             return; 
         } 
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`; 
 
-        difficulty = 1 + (60000 - timeLeft)/60000; // giảm độ khó
+        difficulty = 1 + (60000 - timeLeft)/60000; 
 
         enemySpawnTimer += delta;
         if (enemySpawnTimer > 1200/difficulty) { 
@@ -137,7 +137,7 @@
             if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
             if(isColliding(b,ship)){
                 gameOver = true;
-                gameOverOverlay.style.display = 'block';
+                gameOverOverlay.classList.add('visible');
                 sendTx('score', score);
             }
         });
@@ -155,10 +155,9 @@
                 enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed });
             }
 
-            // Ship chạm enemy
             if(isColliding(ship,e)){
                 gameOver = true;
-                gameOverOverlay.style.display = 'block';
+                gameOverOverlay.classList.add('visible');
                 sendTx('score', score);
             }
         });
@@ -182,7 +181,6 @@
         if(!gameOver) requestAnimationFrame(gameLoop);
     }
 
-    // Player shoot
     window.addEventListener('keydown', e=>{
         keysPressed[e.code]=true;
         if(e.code==='Space'){
@@ -190,7 +188,6 @@
                 lastShotTime = Date.now();
                 if(!playerPubkey){ addLog('Register first'); return; }
                 bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 });
-                // Send shoot action to paymaster
                 const body = { action:'shoot', player:playerPubkey.toBase58(), timestamp:Date.now(), shipX:ship.x };
                 fetch(PAYMASTER_URL,{
                     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
@@ -231,7 +228,6 @@
         }catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
 
-    // Register button
     registerBtn.addEventListener('click', async ()=>{
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
@@ -241,7 +237,6 @@
         try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } 
         catch(e){ addLog('Invalid wallet address'); return; }
 
-        // check FOGO balance
         const balance = await connection.getBalance(pubkey);
         if(balance/1e9 < 0.1){ addLog('Wallet must have ≥0.1 FOGO'); return; }
 
@@ -259,4 +254,5 @@
 
     addLog('Ready. Enter X handle & wallet, then press Register. Use ← → to move, Space to shoot.');
     fetchLeaderboard();
+    setInterval(fetchLeaderboard,5000);
 })();
