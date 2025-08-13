@@ -14,7 +14,7 @@
     let playerPubkey = null, xHandle = null;
     let ship = { x: canvas.width/2-25, y: canvas.height-60, width: 50, height: 20, speed: 4 };
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
-    let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {}, lastShotTime = 0;
+    let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {};
     let enemySpawnTimer = 0, difficulty = 1;
 
     const connection = new solanaWeb3.Connection("https://testnet.fogo.io", "confirmed");
@@ -99,6 +99,7 @@
     function update(delta) {
         if (gameOver) return;
 
+        // Timer & score
         timeLeft -= delta; 
         if (timeLeft <= 0) { 
             gameOver = true; 
@@ -110,6 +111,7 @@
 
         difficulty = 1 + (60000 - timeLeft)/60000; 
 
+        // Spawn enemies
         enemySpawnTimer += delta;
         if (enemySpawnTimer > 1200/difficulty) { 
             spawnEnemy(); 
@@ -168,7 +170,7 @@
             if(p.life<=0) particles.splice(i,1);
         });
 
-        // Player movement
+        // --- PLAYER MOVEMENT ---
         if(keysPressed.ArrowLeft){ ship.x -= ship.speed; if(ship.x<0) ship.x=0; }
         if(keysPressed.ArrowRight){ ship.x += ship.speed; if(ship.x+ship.width>canvas.width) ship.x=canvas.width-ship.width; }
     }
@@ -181,42 +183,43 @@
         if(!gameOver) requestAnimationFrame(gameLoop);
     }
 
+    // --- KEY HANDLING ---
+    window.addEventListener('keydown', e => { keysPressed[e.code] = true; });
+    window.addEventListener('keyup', e => { keysPressed[e.code] = false; });
+
+    // Space shooting
     window.addEventListener('keydown', async e => {
-        if(e.code === 'Space') {
-            if(!playerPubkey){ addLog('Register first'); return; }
-    
-            const body = {
-                action: 'shoot',
-                player: playerPubkey.toBase58(),
-                timestamp: Date.now(),
-                shipX: ship.x
-            };
-    
-            try {
-                const resp = await fetch(PAYMASTER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-    
-                if(!resp.ok){
-                    addLog('Paymaster error ' + resp.status);
-                    return;
-                }
-    
-                const data = await resp.json();
-                if(data.txSignature){
-                    addLog(`Tx: ${data.txSignature}`);
-                    // Chỉ push đạn khi tx thành công
-                    bullets.push({ x: ship.x + ship.width/2 - 2.5, y: ship.y - 10, width: 5, height: 10 });
-                }
-            } catch(err) {
-                addLog('Tx error: ' + (err.message || err));
+        if(e.code !== 'Space') return;
+        if(!playerPubkey){ addLog('Register first'); return; }
+
+        const body = {
+            action: 'shoot',
+            player: playerPubkey.toBase58(),
+            timestamp: Date.now(),
+            shipX: ship.x
+        };
+
+        try {
+            const resp = await fetch(PAYMASTER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if(!resp.ok){
+                addLog('Paymaster error ' + resp.status);
+                return;
             }
+
+            const data = await resp.json();
+            if(data.txSignature){
+                addLog(`Tx: ${data.txSignature}`);
+                bullets.push({ x: ship.x + ship.width/2 - 2.5, y: ship.y - 10, width: 5, height: 10 });
+            }
+        } catch(err) {
+            addLog('Tx error: ' + (err.message || err));
         }
     });
-
-    window.addEventListener('keyup', e=>{ keysPressed[e.code]=false; });
 
     async function sendTx(action,value=null){
         if(!playerPubkey){ addLog('Register first'); return; }
