@@ -13,22 +13,63 @@
 
 <style>
 body {
-    background-image: url('./background.jpg');
-    background-size: 120% auto; /* tăng kích thước ảnh nền */
-    background-position: center;
-    background-repeat: no-repeat;
-    position: relative;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  background: url('background.jpg') center/cover no-repeat fixed;
+  position: relative;
+  font-family: Arial, sans-serif;
+  color: white;
 }
 
+/* Lớp phủ mờ tối để nền không quá gắt */
 body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(7, 16, 41, 0.7); /* lớp phủ mờ */
-    z-index: -1; /* để dưới tất cả */
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4); /* tối 40% */
+  backdrop-filter: blur(3px); /* làm mờ */
+  z-index: -1;
+}
+
+/* Game panel */
+.game-panel, .leaderboard {
+  background: rgba(0, 0, 0, 0.6); /* nền đen trong suốt */
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Input & Button */
+input, button {
+  border-radius: 10px;
+  border: none;
+  padding: 10px 15px;
+  font-size: 16px;
+}
+
+button {
+  background: linear-gradient(90deg, #ff9800, #ff5722);
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* Căn giữa */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 30px;
+  height: 100vh;
 }
 
 
@@ -85,6 +126,7 @@ button:disabled { background:#666;cursor:not-allowed; }
 
 </body>
 </html>
+
 
 
 
