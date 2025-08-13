@@ -146,14 +146,14 @@
         // Enemy bullets
         for(let i=enemyBullets.length-1;i>=0;i--){
             const b = enemyBullets[i];
-            b.y += 2 + difficulty; // đạn mạnh hơn theo difficulty
+            b.y += 2 + difficulty; 
             if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
             else if(isColliding(b,ship)){
                 enemyBullets.splice(i,1);
                 gameOver = true;
                 gameOverOverlay.classList.add('visible');
                 sendTx('score', score);
-                return; // dừng update ngay
+                return; 
             }
         }
 
@@ -243,6 +243,9 @@
             });
         }catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
+
+    // Realtime leaderboard every 1.5s
+    setInterval(fetchLeaderboard, 1500);
 
     connectBtn.addEventListener('click',async ()=>{
         xHandle = xInput.value.trim();
