@@ -63,7 +63,7 @@
             display: flex;
             flex-direction: column-reverse;
         }
-        
+        
         .logEntry {
             padding: 4px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -76,7 +76,7 @@
             align-items: flex-end;
             margin-top: 16px;
         }
-        
+        
         .controlsGroup {
             display: flex;
             gap: 8px;
@@ -201,7 +201,7 @@
             <div id="logBox"></div>
         </div>
     </div>
-    
+    
     <script>
         (async () => {
             const connection = new window.solanaWeb3.Connection('https://testnet.fogo.io', 'confirmed');
@@ -454,7 +454,7 @@
                 addLog('Player shot!');
             }
 
-            const PAYMASTER_URL = 'http://38.54.95.201:3000'; // Khai báo hằng số Paymaster URL ở đây
+            const PAYMASTER_URL = 'http://38.54.95.201:3000';
 
             async function sendTx(action, value = null) {
                 if (!playerPubkey) {
@@ -594,11 +594,8 @@
                     if (typeof pk === 'string') pk = new window.solanaWeb3.PublicKey(pk);
                     playerPubkey = pk;
                     addLog('Connected: ' + playerPubkey.toBase58());
-                    if (xHandle && xHandle.length > 0) {
-                        await sendTx('register', null, xHandle);
-                    } else {
-                        await sendTx('register');
-                    }
+                    await sendTx('register'); // Sửa lỗi ở đây
+                    
                     connectBtn.disabled = true;
                     resetBtn.disabled = false;
                     xInput.disabled = true;
