@@ -1,631 +1,627 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Fogo Shooting Game — Sponsored</title>
-    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <style>
-        body {
-            background: #071029;
-            color: #e6eef8;
-            font-family: Inter, Arial;
-            margin: 0;
-            padding: 16px;
-            user-select: none;
-            overflow: hidden;
-            display: flex;
-            justify-content: center; /* Đặt lại căn giữa */
-            align-items: flex-start;
-            gap: 64px;
-        }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Fogo Shooting Game — Sponsored</title>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <style>
+        body {
+            background: #071029;
+            color: #e6eef8;
+            font-family: Inter, Arial;
+            margin: 0;
+            padding: 16px;
+            user-select: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 64px;
+        }
 
-        #gameContainer {
-            position: relative;
-            width: 480px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        #gameContainer {
+            position: relative;
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        #game {
-            border-radius: 8px;
-            background: linear-gradient(#02111a, #071b24);
-            display: block;
-            margin: 0 auto;
-        }
+        #game {
+            border-radius: 8px;
+            background: linear-gradient(#02111a, #071b24);
+            display: block;
+            margin: 0 auto;
+        }
 
-        #scoreTimer {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            top: 8px;
-            color: #cfe8ff;
-            font-size: 18px;
-            font-weight: bold;
-            user-select: none;
-            text-align: center;
-            z-index: 10;
-            pointer-events: none;
-            text-shadow: 0 0 5px #000;
-        }
+        #scoreTimer {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 8px;
+            color: #cfe8ff;
+            font-size: 18px;
+            font-weight: bold;
+            user-select: none;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 0 5px #000;
+        }
 
-        #logBox {
-            width: 250px;
-            height: 300px;
-            overflow-y: auto;
-            background: rgba(15, 30, 50, 0.7);
-            border-radius: 8px;
-            padding: 16px;
-            color: #9fb6d6;
-            font-size: 13px;
-            font-family: monospace;
-            display: flex;
-            flex-direction: column-reverse;
-        }
-        
-        .logEntry {
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        #logBox {
+            width: 250px;
+            height: 300px;
+            overflow-y: auto;
+            background: rgba(15, 30, 50, 0.7);
+            border-radius: 8px;
+            padding: 16px;
+            color: #9fb6d6;
+            font-size: 13px;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        
+        .logEntry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-        #controlsPanel {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            align-items: flex-end;
-            margin-top: 16px; /* Khoảng cách với phần trên */
-        }
-        
-        .controlsGroup {
-            display: flex;
-            gap: 8px;
-        }
+        #controlsPanel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: flex-end;
+            margin-top: 16px;
+        }
+        
+        .controlsGroup {
+            display: flex;
+            gap: 8px;
+        }
 
-        button {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: none;
-            background: #3a7bd5;
-            color: white;
-            cursor: pointer;
-            font-weight: 600;
-        }
+        button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            background: #3a7bd5;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
 
-        button:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
 
-        #gameOverOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 20;
-            text-align: center;
-            gap: 16px;
-            visibility: hidden;
-            opacity: 0;
-            transition: visibility 0s, opacity 0.5s linear;
-        }
+        #gameOverOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 20;
+            text-align: center;
+            gap: 16px;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.5s linear;
+        }
 
-        #gameOverOverlay.visible {
-            visibility: visible;
-            opacity: 1;
-        }
+        #gameOverOverlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
 
-        #gameOverOverlay h2 {
-            font-size: 32px;
-            margin: 0;
-        }
+        #gameOverOverlay h2 {
+            font-size: 32px;
+            margin: 0;
+        }
 
-        #xInput {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #666;
-            background: #111;
-            color: white;
-            font-family: Inter, Arial;
-            margin-right: 8px;
-        }
+        #xInput {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #666;
+            background: #111;
+            color: white;
+            font-family: Inter, Arial;
+            margin-right: 8px;
+        }
 
-        #leaderboard {
-            width: 250px;
-            background: rgba(15, 30, 50, 0.7);
-            border-radius: 8px;
-            padding: 16px;
-            color: #e6eef8;
-        }
+        #leaderboard {
+            width: 250px;
+            background: rgba(15, 30, 50, 0.7);
+            border-radius: 8px;
+            padding: 16px;
+            color: #e6eef8;
+        }
 
-        #leaderboard h3 {
-            margin-top: 0;
-            text-align: center;
-        }
+        #leaderboard h3 {
+            margin-top: 0;
+            text-align: center;
+        }
 
-        #leaderboard ol {
-            padding-left: 20px;
-            margin: 0;
-        }
+        #leaderboard ol {
+            padding-left: 20px;
+            margin: 0;
+        }
 
-        #leaderboard li {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
+        #leaderboard li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
 
-        #leaderboard li:nth-child(1) {
-            color: gold;
-            font-weight: bold;
-        }
+        #leaderboard li:nth-child(1) {
+            color: gold;
+            font-weight: bold;
+        }
 
-        #leaderboard li:nth-child(2) {
-            color: silver;
-            font-weight: bold;
-        }
+        #leaderboard li:nth-child(2) {
+            color: silver;
+            font-weight: bold;
+        }
 
-        #leaderboard li:nth-child(3) {
-            color: #cd7f32;
-            font-weight: bold;
-        }
-    </style>
+        #leaderboard li:nth-child(3) {
+            color: #cd7f32;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <div style="display: flex; gap: 64px; align-items: flex-start;">
-        <aside id="leaderboard">
-            <h3>Leaderboard</h3>
-            <ol id="leaderboardList"></ol>
-        </aside>
+    <div style="display: flex; gap: 64px; align-items: flex-start;">
+        <aside id="leaderboard">
+            <h3>Leaderboard</h3>
+            <ol id="leaderboardList"></ol>
+        </aside>
 
-        <div id="gameContainer">
-            <canvas id="game" width="480" height="640"></canvas>
-            <div id="gameOverOverlay">
-                <h2>Game Over!</h2>
-                <button id="resetBtn">Reset Game</button>
-            </div>
-            <div id="scoreTimer">Score: 0 | Time: 60</div>
-        </div>
+        <div id="gameContainer">
+            <canvas id="game" width="480" height="640"></canvas>
+            <div id="gameOverOverlay">
+                <h2>Game Over!</h2>
+                <button id="resetBtn">Reset Game</button>
+            </div>
+            <div id="scoreTimer">Score: 0 | Time: 60</div>
+        </div>
 
-        <div>
-            <div id="controlsPanel">
-                <input id="xInput" type="text" placeholder="Your X handle" />
-                <button id="connectBtn">Connect Wallet</button>
-            </div>
-            <div id="logBox"></div>
-        </div>
-    </div>
-    
-    <script>
-        (async () => {
-            const connection = new window.solanaWeb3.Connection('https://testnet.fogo.io', 'confirmed');
-            const canvas = document.getElementById('game');
-            const ctx = canvas.getContext('2d');
-            const scoreTimerEl = document.getElementById('scoreTimer');
-            const logBox = document.getElementById('logBox');
-            const connectBtn = document.getElementById('connectBtn');
-            const resetBtn = document.getElementById('resetBtn');
-            const gameOverOverlay = document.getElementById('gameOverOverlay');
-            const xInput = document.getElementById('xInput');
-            const leaderboardList = document.getElementById('leaderboardList');
+        <div>
+            <div id="controlsPanel">
+                <input id="xInput" type="text" placeholder="Your X handle" />
+                <button id="connectBtn">Connect Wallet</button>
+            </div>
+            <div id="logBox"></div>
+        </div>
+    </div>
+    
+    <script>
+        (async () => {
+            const connection = new window.solanaWeb3.Connection('https://testnet.fogo.io', 'confirmed');
+            const canvas = document.getElementById('game');
+            const ctx = canvas.getContext('2d');
+            const scoreTimerEl = document.getElementById('scoreTimer');
+            const logBox = document.getElementById('logBox');
+            const connectBtn = document.getElementById('connectBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const gameOverOverlay = document.getElementById('gameOverOverlay');
+            const xInput = document.getElementById('xInput');
+            const leaderboardList = document.getElementById('leaderboardList');
 
-            const defaults = {
-                shipX: canvas.width / 2 - 25,
-                shipY: canvas.height - 60,
-                shipSpeed: 4,
-                enemySpawnInterval: 2000,
-                enemyMinSpeed: 1.0,
-                enemyMaxSpeed: 2.0,
-                bulletSpeed: 8,
-                enemyBulletSpeed: 2.5,
-                timeLimitMs: 60 * 1000,
-                shotCooldownMs: 200,
-            };
+            const defaults = {
+                shipX: canvas.width / 2 - 25,
+                shipY: canvas.height - 60,
+                shipSpeed: 4,
+                enemySpawnInterval: 2000,
+                enemyMinSpeed: 1.0,
+                enemyMaxSpeed: 2.0,
+                bulletSpeed: 8,
+                enemyBulletSpeed: 2.5,
+                timeLimitMs: 60 * 1000,
+                shotCooldownMs: 200,
+            };
 
-            let playerPubkey = null;
-            let xHandle = null;
-            let ship = {};
-            let bullets = [];
-            let enemies = [];
-            let enemyBullets = [];
-            let score = 0;
-            let timeLeft = defaults.timeLimitMs;
-            let lastEnemySpawn = 0;
-            let gameOver = true;
-            let keysPressed = {};
-            let lastShotTime = 0;
-            let difficultyTimer = 0;
-            const speedIncreaseInterval = 15000;
-            const speedIncreaseAmount = 0.2;
-            let enemyIdCounter = 0;
+            let playerPubkey = null;
+            let xHandle = null;
+            let ship = {};
+            let bullets = [];
+            let enemies = [];
+            let enemyBullets = [];
+            let score = 0;
+            let timeLeft = defaults.timeLimitMs;
+            let lastEnemySpawn = 0;
+            let gameOver = true;
+            let keysPressed = {};
+            let lastShotTime = 0;
+            let difficultyTimer = 0;
+            const speedIncreaseInterval = 15000;
+            const speedIncreaseAmount = 0.2;
+            let enemyIdCounter = 0;
 
-            const maxLogs = 15; // Tăng số lượng log
-            let logs = [];
+            const maxLogs = 15;
+            let logs = [];
 
-            function addLog(msg) {
-                logs.push(msg);
-                if (logs.length > maxLogs) logs.shift();
-                renderLogs();
-            }
+            function addLog(msg) {
+                logs.push(msg);
+                if (logs.length > maxLogs) logs.shift();
+                renderLogs();
+            }
 
-            function renderLogs() {
-                logBox.innerHTML = '';
-                for (let i = logs.length - 1; i >= 0; i--) {
-                    const div = document.createElement('div');
-                    div.className = 'logEntry';
-                    div.textContent = logs[i];
-                    logBox.appendChild(div);
-                }
-            }
+            function renderLogs() {
+                logBox.innerHTML = '';
+                for (let i = logs.length - 1; i >= 0; i--) {
+                    const div = document.createElement('div');
+                    div.className = 'logEntry';
+                    div.textContent = logs[i];
+                    logBox.appendChild(div);
+                }
+            }
 
-            function isColliding(a, b) {
-                return (
-                    a.x < b.x + b.width &&
-                    a.x + a.width > b.x &&
-                    a.y < b.y + b.height &&
-                    a.y + a.height > b.y
-                );
-            }
+            function isColliding(a, b) {
+                return (
+                    a.x < b.x + b.width &&
+                    a.x + a.width > b.x &&
+                    a.y < b.y + b.height &&
+                    a.y + a.height > b.y
+                );
+            }
 
-            function resetGame() {
-                ship = {
-                    x: defaults.shipX,
-                    y: defaults.shipY,
-                    width: 50,
-                    height: 20,
-                    speed: defaults.shipSpeed,
-                };
-                bullets = [];
-                enemies = [];
-                enemyBullets = [];
-                score = 0;
-                timeLeft = defaults.timeLimitMs;
-                lastEnemySpawn = 0;
-                gameOver = false;
-                scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft / 1000)}`;
-                addLog('Game reset');
-                gameOverOverlay.classList.remove('visible');
-                defaults.enemyMinSpeed = 1.0;
-                defaults.enemyMaxSpeed = 2.0;
-                difficultyTimer = 0;
-                enemyIdCounter = 0;
-            }
+            function resetGame() {
+                ship = {
+                    x: defaults.shipX,
+                    y: defaults.shipY,
+                    width: 50,
+                    height: 20,
+                    speed: defaults.shipSpeed,
+                };
+                bullets = [];
+                enemies = [];
+                enemyBullets = [];
+                score = 0;
+                timeLeft = defaults.timeLimitMs;
+                lastEnemySpawn = 0;
+                gameOver = false;
+                scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft / 1000)}`;
+                addLog('Game reset');
+                gameOverOverlay.classList.remove('visible');
+                defaults.enemyMinSpeed = 1.0;
+                defaults.enemyMaxSpeed = 2.0;
+                difficultyTimer = 0;
+                enemyIdCounter = 0;
+            }
 
-            function spawnEnemy() {
-                const enemySize = 40;
-                const x = Math.random() * (canvas.width - enemySize);
-                enemies.push({
-                    id: enemyIdCounter++,
-                    x,
-                    y: -enemySize,
-                    width: enemySize,
-                    height: enemySize,
-                    speed: defaults.enemyMinSpeed + Math.random() * (defaults.enemyMaxSpeed - defaults.enemyMinSpeed),
-                    shootTimer: 0,
-                    shootInterval: 1500 + Math.random() * 1000,
-                });
-            }
+            function spawnEnemy() {
+                const enemySize = 40;
+                const x = Math.random() * (canvas.width - enemySize);
+                enemies.push({
+                    id: enemyIdCounter++,
+                    x,
+                    y: -enemySize,
+                    width: enemySize,
+                    height: enemySize,
+                    speed: defaults.enemyMinSpeed + Math.random() * (defaults.enemyMaxSpeed - defaults.enemyMinSpeed),
+                    shootTimer: 0,
+                    shootInterval: 1500 + Math.random() * 1000,
+                });
+            }
 
-            function drawShip() {
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(ship.x, ship.y, ship.width, ship.height);
-            }
+            function drawShip() {
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(ship.x, ship.y, ship.width, ship.height);
+            }
 
-            function drawBullets() {
-                ctx.fillStyle = '#ffde59';
-                bullets.forEach(bullet => {
-                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-                });
-            }
+            function drawBullets() {
+                ctx.fillStyle = '#ffde59';
+                bullets.forEach(bullet => {
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                });
+            }
 
-            function drawEnemies() {
-                ctx.fillStyle = '#d32f2f';
-                enemies.forEach(enemy => {
-                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-                });
-            }
+            function drawEnemies() {
+                ctx.fillStyle = '#d32f2f';
+                enemies.forEach(enemy => {
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                });
+            }
 
-            function drawEnemyBullets() {
-                ctx.fillStyle = '#ff6e6e';
-                enemyBullets.forEach(bullet => {
-                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-                });
-            }
+            function drawEnemyBullets() {
+                ctx.fillStyle = '#ff6e6e';
+                enemyBullets.forEach(bullet => {
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                });
+            }
 
-            function update(deltaTime) {
-                if (gameOver) return;
+            function update(deltaTime) {
+                if (gameOver) return;
 
-                timeLeft -= deltaTime;
-                if (timeLeft <= 0) {
-                    gameOver = true;
-                    addLog(`Game Over! Time's up. Score: ${score}`);
-                    gameOverOverlay.classList.add('visible');
-                    sendTx('score', score);
-                    return;
-                }
-                scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft / 1000)}`;
+                timeLeft -= deltaTime;
+                if (timeLeft <= 0) {
+                    gameOver = true;
+                    addLog(`Game Over! Time's up. Score: ${score}`);
+                    gameOverOverlay.classList.add('visible');
+                    sendTx('score', score);
+                    return;
+                }
+                scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft / 1000)}`;
 
-                difficultyTimer += deltaTime;
-                if (difficultyTimer >= speedIncreaseInterval) {
-                    defaults.enemyMinSpeed += speedIncreaseAmount;
-                    defaults.enemyMaxSpeed += speedIncreaseAmount;
-                    addLog(`Difficulty increased! New enemy speed: ${defaults.enemyMinSpeed.toFixed(1)} - ${defaults.enemyMaxSpeed.toFixed(1)}`);
-                    difficultyTimer = 0;
-                }
+                difficultyTimer += deltaTime;
+                if (difficultyTimer >= speedIncreaseInterval) {
+                    defaults.enemyMinSpeed += speedIncreaseAmount;
+                    defaults.enemyMaxSpeed += speedIncreaseAmount;
+                    addLog(`Difficulty increased! New enemy speed: ${defaults.enemyMinSpeed.toFixed(1)} - ${defaults.enemyMaxSpeed.toFixed(1)}`);
+                    difficultyTimer = 0;
+                }
 
-                if (Date.now() - lastEnemySpawn > defaults.enemySpawnInterval) {
-                    spawnEnemy();
-                    lastEnemySpawn = Date.now();
-                }
+                if (Date.now() - lastEnemySpawn > defaults.enemySpawnInterval) {
+                    spawnEnemy();
+                    lastEnemySpawn = Date.now();
+                }
 
-                enemies.forEach(enemy => {
-                    enemy.y += enemy.speed;
-                    enemy.shootTimer += deltaTime;
-                    if (enemy.shootTimer > enemy.shootInterval) {
-                        enemy.shootTimer = 0;
-                        enemyBullets.push({
-                            enemyId: enemy.id,
-                            x: enemy.x + enemy.width / 2 - 5,
-                            y: enemy.y + enemy.height,
-                            width: 10,
-                            height: 20,
-                            speed: defaults.enemyBulletSpeed,
-                        });
-                    }
-                });
-                enemies = enemies.filter(e => e.y <= canvas.height);
+                enemies.forEach(enemy => {
+                    enemy.y += enemy.speed;
+                    enemy.shootTimer += deltaTime;
+                    if (enemy.shootTimer > enemy.shootInterval) {
+                        enemy.shootTimer = 0;
+                        enemyBullets.push({
+                            enemyId: enemy.id,
+                            x: enemy.x + enemy.width / 2 - 5,
+                            y: enemy.y + enemy.height,
+                            width: 10,
+                            height: 20,
+                            speed: defaults.enemyBulletSpeed,
+                        });
+                    }
+                });
+                enemies = enemies.filter(e => e.y <= canvas.height);
 
-                bullets.forEach((bullet, i) => {
-                    bullet.y -= defaults.bulletSpeed;
-                    if (bullet.y < -bullet.height) bullets.splice(i, 1);
-                });
+                bullets.forEach((bullet, i) => {
+                    bullet.y -= defaults.bulletSpeed;
+                    if (bullet.y < -bullet.height) bullets.splice(i, 1);
+                });
 
-                enemyBullets.forEach((bullet, i) => {
-                    bullet.y += bullet.speed;
-                    if (bullet.y > canvas.height + bullet.height) enemyBullets.splice(i, 1);
-                });
+                enemyBullets.forEach((bullet, i) => {
+                    bullet.y += bullet.speed;
+                    if (bullet.y > canvas.height + bullet.height) enemyBullets.splice(i, 1);
+                });
 
-                bullets.forEach((bullet, bi) => {
-                    enemies.forEach((enemy, ei) => {
-                        if (isColliding(bullet, enemy)) {
-                            enemies.splice(ei, 1);
-                            bullets.splice(bi, 1);
-                            score++;
-                            addLog(`Enemy hit! Score: ${score}`);
-                            const killedEnemyId = enemy.id;
-                            enemyBullets = enemyBullets.filter(eb => eb.enemyId !== killedEnemyId);
-                            addLog(`Enemy bullets from ID ${killedEnemyId} cleared.`);
-                        }
-                    });
-                });
+                bullets.forEach((bullet, bi) => {
+                    enemies.forEach((enemy, ei) => {
+                        if (isColliding(bullet, enemy)) {
+                            enemies.splice(ei, 1);
+                            bullets.splice(bi, 1);
+                            score++;
+                            addLog(`Enemy hit! Score: ${score}`);
+                            const killedEnemyId = enemy.id;
+                            enemyBullets = enemyBullets.filter(eb => eb.enemyId !== killedEnemyId);
+                            addLog(`Enemy bullets from ID ${killedEnemyId} cleared.`);
+                        }
+                    });
+                });
 
-                enemyBullets.forEach(bullet => {
-                    if (isColliding(bullet, ship)) {
-                        gameOver = true;
-                        addLog(`Game Over! You were hit! Score: ${score}`);
-                        gameOverOverlay.classList.add('visible');
-                        sendTx('score', score);
-                    }
-                });
+                enemyBullets.forEach(bullet => {
+                    if (isColliding(bullet, ship)) {
+                        gameOver = true;
+                        addLog(`Game Over! You were hit! Score: ${score}`);
+                        gameOverOverlay.classList.add('visible');
+                        sendTx('score', score);
+                    }
+                });
 
-                enemies.forEach(enemy => {
-                    if (isColliding(ship, enemy)) {
-                        gameOver = true;
-                        addLog(`Game Over! You collided with enemy! Score: ${score}`);
-                        gameOverOverlay.classList.add('visible');
-                        sendTx('score', score);
-                    }
-                });
+                enemies.forEach(enemy => {
+                    if (isColliding(ship, enemy)) {
+                        gameOver = true;
+                        addLog(`Game Over! You collided with enemy! Score: ${score}`);
+                        gameOverOverlay.classList.add('visible');
+                        sendTx('score', score);
+                    }
+                });
 
-                if (keysPressed.ArrowLeft) {
-                    ship.x -= ship.speed;
-                    if (ship.x < 0) ship.x = 0;
-                }
-                if (keysPressed.ArrowRight) {
-                    ship.x += ship.speed;
-                    if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width;
-                }
-            }
+                if (keysPressed.ArrowLeft) {
+                    ship.x -= ship.speed;
+                    if (ship.x < 0) ship.x = 0;
+                }
+                if (keysPressed.ArrowRight) {
+                    ship.x += ship.speed;
+                    if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width;
+                }
+            }
 
-            function draw() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#02111a';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                drawShip();
-                drawBullets();
-                drawEnemies();
-                drawEnemyBullets();
-            }
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#02111a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                drawShip();
+                drawBullets();
+                drawEnemies();
+                drawEnemyBullets();
+            }
 
-            function shootBullet() {
-                bullets.push({
-                    x: ship.x + ship.width / 2 - 5,
-                    y: ship.y - 10,
-                    width: 10,
-                    height: 20,
-                    speed: defaults.bulletSpeed,
-                });
-                addLog('Player shot!');
-            }
+            function shootBullet() {
+                bullets.push({
+                    x: ship.x + ship.width / 2 - 5,
+                    y: ship.y - 10,
+                    width: 10,
+                    height: 20,
+                    speed: defaults.bulletSpeed,
+                });
+                addLog('Player shot!');
+            }
 
-            async function sendTx(action, value = null) {
-                if (!playerPubkey) {
-                    addLog('Connect wallet first');
-                    return false;
-                }
-                const PAYMASTER_URL = 'http://38.54.95.201:3000';
-                if (!pmUrl) {
-                    addLog('Set paymaster URL');
-                    return false;
-                }
-                try {
-                    addLog(`Sending tx: ${action}...`);
-                    const body = {
-                        action,
-                        player: playerPubkey.toBase58(),
-                    };
-                    if (action === 'register' && xHandle) {
-                        body.xHandle = xHandle;
-                    }
-                    if (action === 'score') {
-                        body.score = value;
-                    }
-                    const resp = await fetch(pmUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body),
-                    });
-                    if (!resp.ok) {
-                        const txt = await resp.text();
-                        throw new Error('Paymaster HTTP ' + resp.status + ' - ' + txt);
-                    }
-                    const data = await resp.json();
-                    if (data.txSignature) {
-                        addLog(`Tx submitted: ${data.txSignature}`);
-                        connection.confirmTransaction(data.txSignature, 'processed')
-                            .then(() => {
-                                addLog(`Tx processed: ${data.txSignature}`);
-                                if (action === 'score' || action === 'register') {
-                                    fetchLeaderboard();
-                                }
-                            })
-                            .catch(e => {
-                                addLog(`Tx confirm error: ${e.message || e}`);
-                            });
-                        return true;
-                    }
-                    throw new Error('Unexpected paymaster response: ' + JSON.stringify(data));
-                } catch (e) {
-                    addLog(`Error sending tx: ${e.message || e}`);
-                    return false;
-                }
-            }
+            const PAYMASTER_URL = 'http://38.54.95.201:3000'; // Khai báo hằng số Paymaster URL ở đây
 
-            async function fetchLeaderboard() {
-                const pmUrl = 'http://localhost:3000/leaderboard';
-                try {
-                    addLog('Fetching leaderboard...');
-                    const resp = await fetch(pmUrl);
-                    if (!resp.ok) {
-                        const txt = await resp.text();
-                        throw new Error('Paymaster HTTP ' + resp.status + ' - ' + txt);
-                    }
-                    const leaderboard = await resp.json();
-                    renderLeaderboard(leaderboard);
-                    addLog('Leaderboard updated.');
-                } catch (e) {
-                    addLog(`Error fetching leaderboard: ${e.message || e}`);
-                }
-            }
+            async function sendTx(action, value = null) {
+                if (!playerPubkey) {
+                    addLog('Connect wallet first');
+                    return false;
+                }
+                try {
+                    addLog(`Sending tx: ${action}...`);
+                    const body = {
+                        action,
+                        player: playerPubkey.toBase58(),
+                    };
+                    if (action === 'register' && xHandle) {
+                        body.xHandle = xHandle;
+                    }
+                    if (action === 'score') {
+                        body.score = value;
+                    }
+                    const resp = await fetch(PAYMASTER_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+                    if (!resp.ok) {
+                        const txt = await resp.text();
+                        throw new Error('Paymaster HTTP ' + resp.status + ' - ' + txt);
+                    }
+                    const data = await resp.json();
+                    if (data.txSignature) {
+                        addLog(`Tx submitted: ${data.txSignature}`);
+                        connection.confirmTransaction(data.txSignature, 'processed')
+                            .then(() => {
+                                addLog(`Tx processed: ${data.txSignature}`);
+                                if (action === 'score' || action === 'register') {
+                                    fetchLeaderboard();
+                                }
+                            })
+                            .catch(e => {
+                                addLog(`Tx confirm error: ${e.message || e}`);
+                            });
+                        return true;
+                    }
+                    throw new Error('Unexpected paymaster response: ' + JSON.stringify(data));
+                } catch (e) {
+                    addLog(`Error sending tx: ${e.message || e}`);
+                    return false;
+                }
+            }
 
-            function renderLeaderboard(leaderboardData) {
-                leaderboardList.innerHTML = '';
-                leaderboardData.forEach((player, index) => {
-                    const li = document.createElement('li');
-                    const name = player.xHandle || player.player.slice(0, 4) + '...';
-                    li.innerHTML = `
-                        <span>${name}</span>
-                        <span>${player.score}</span>
-                    `;
-                    leaderboardList.appendChild(li);
-                });
-            }
+            async function fetchLeaderboard() {
+                const pmUrl = `${PAYMASTER_URL}/leaderboard`;
+                try {
+                    addLog('Fetching leaderboard...');
+                    const resp = await fetch(pmUrl);
+                    if (!resp.ok) {
+                        const txt = await resp.text();
+                        throw new Error('Paymaster HTTP ' + resp.status + ' - ' + txt);
+                    }
+                    const leaderboard = await resp.json();
+                    renderLeaderboard(leaderboard);
+                    addLog('Leaderboard updated.');
+                } catch (e) {
+                    addLog(`Error fetching leaderboard: ${e.message || e}`);
+                }
+            }
 
-            let lastFrameTime = 0;
-            function gameLoop(timestamp) {
-                if (!lastFrameTime) lastFrameTime = timestamp;
-                const deltaTime = timestamp - lastFrameTime;
-                lastFrameTime = timestamp;
-                update(deltaTime);
-                draw();
-                if (!gameOver) requestAnimationFrame(gameLoop);
-            }
+            function renderLeaderboard(leaderboardData) {
+                leaderboardList.innerHTML = '';
+                leaderboardData.forEach((player, index) => {
+                    const li = document.createElement('li');
+                    const name = player.xHandle || player.player.slice(0, 4) + '...';
+                    li.innerHTML = `
+                        <span>${name}</span>
+                        <span>${player.score}</span>
+                    `;
+                    leaderboardList.appendChild(li);
+                });
+            }
 
-            window.addEventListener('keydown', async e => {
-                if (gameOver) return;
-                if (!playerPubkey) {
-                    addLog('Connect wallet first');
-                    return;
-                }
-                if (e.code === 'Space') {
-                    const currentTime = Date.now();
-                    if (currentTime - lastShotTime > defaults.shotCooldownMs) {
-                        lastShotTime = currentTime;
-                        const ok = await sendTx('shoot');
-                        if (ok) {
-                            shootBullet();
-                        }
-                    }
-                }
-                keysPressed[e.code] = true;
-            });
+            let lastFrameTime = 0;
+            function gameLoop(timestamp) {
+                if (!lastFrameTime) lastFrameTime = timestamp;
+                const deltaTime = timestamp - lastFrameTime;
+                lastFrameTime = timestamp;
+                update(deltaTime);
+                draw();
+                if (!gameOver) requestAnimationFrame(gameLoop);
+            }
 
-            window.addEventListener('keyup', e => {
-                keysPressed[e.code] = false;
-            });
+            window.addEventListener('keydown', async e => {
+                if (gameOver) return;
+                if (!playerPubkey) {
+                    addLog('Connect wallet first');
+                    return;
+                }
+                if (e.code === 'Space') {
+                    const currentTime = Date.now();
+                    if (currentTime - lastShotTime > defaults.shotCooldownMs) {
+                        lastShotTime = currentTime;
+                        const ok = await sendTx('shoot');
+                        if (ok) {
+                            shootBullet();
+                        }
+                    }
+                }
+                keysPressed[e.code] = true;
+            });
 
-            connectBtn.addEventListener('click', async () => {
-                if (playerPubkey) {
-                    addLog('Already connected');
-                    return;
-                }
-                xHandle = xInput.value.trim();
-                const confirmationMessage = `Are you sure you want to connect your wallet and link it with X handle "${xHandle}"? This transaction will be recorded on the blockchain.`;
-                if (xHandle.length > 0 && !confirm(confirmationMessage)) {
-                    addLog('Connection cancelled by user.');
-                    return;
-                }
-                if (xHandle.length > 0) {
-                    addLog(`X handle: ${xHandle}`);
-                } else {
-                    addLog('X handle is optional. Continuing without it.');
-                }
-                const provider = window.solana || (window.nightly && window.nightly.solana);
-                if (!provider || typeof provider.connect !== 'function') {
-                    addLog('No wallet provider found. Open Nightly or Phantom.');
-                    return;
-                }
-                try {
-                    const resp = await provider.connect();
-                    let pk = resp?.publicKey || provider.publicKey;
-                    if (typeof pk === 'string') pk = new window.solanaWeb3.PublicKey(pk);
-                    playerPubkey = pk;
-                    addLog('Connected: ' + playerPubkey.toBase58());
-                    if (xHandle && xHandle.length > 0) {
-                        await sendTx('register', xHandle);
-                    } else {
-                        await sendTx('register');
-                    }
-                    connectBtn.disabled = true;
-                    resetBtn.disabled = false;
-                    xInput.disabled = true;
-                    fetchLeaderboard();
-                    resetGame();
-                    requestAnimationFrame(gameLoop);
-                } catch (e) {
-                    addLog('Connect failed: ' + (e.message || e));
-                }
-            });
+            window.addEventListener('keyup', e => {
+                keysPressed[e.code] = false;
+            });
 
-            resetBtn.addEventListener('click', () => {
-                if (!playerPubkey) {
-                    addLog('Connect wallet first');
-                    return;
-                }
-                resetGame();
-                requestAnimationFrame(gameLoop);
-            });
+            connectBtn.addEventListener('click', async () => {
+                if (playerPubkey) {
+                    addLog('Already connected');
+                    return;
+                }
+                xHandle = xInput.value.trim();
+                const confirmationMessage = `Are you sure you want to connect your wallet and link it with X handle "${xHandle}"? This transaction will be recorded on the blockchain.`;
+                if (xHandle.length > 0 && !confirm(confirmationMessage)) {
+                    addLog('Connection cancelled by user.');
+                    return;
+                }
+                if (xHandle.length > 0) {
+                    addLog(`X handle: ${xHandle}`);
+                } else {
+                    addLog('X handle is optional. Continuing without it.');
+                }
+                const provider = window.solana || (window.nightly && window.nightly.solana);
+                if (!provider || typeof provider.connect !== 'function') {
+                    addLog('No wallet provider found. Open Nightly or Phantom.');
+                    return;
+                }
+                try {
+                    const resp = await provider.connect();
+                    let pk = resp?.publicKey || provider.publicKey;
+                    if (typeof pk === 'string') pk = new window.solanaWeb3.PublicKey(pk);
+                    playerPubkey = pk;
+                    addLog('Connected: ' + playerPubkey.toBase58());
+                    if (xHandle && xHandle.length > 0) {
+                        await sendTx('register', null, xHandle);
+                    } else {
+                        await sendTx('register');
+                    }
+                    connectBtn.disabled = true;
+                    resetBtn.disabled = false;
+                    xInput.disabled = true;
+                    fetchLeaderboard();
+                    resetGame();
+                    requestAnimationFrame(gameLoop);
+                } catch (e) {
+                    addLog('Connect failed: ' + (e.message || e));
+                }
+            });
 
-            addLog('Ready. Connect wallet, use ← → to move, Space to shoot.');
-            fetchLeaderboard();
-        })();
-    </script>
+            resetBtn.addEventListener('click', () => {
+                if (!playerPubkey) {
+                    addLog('Connect wallet first');
+                    return;
+                }
+                resetGame();
+                requestAnimationFrame(gameLoop);
+            });
+
+            addLog('Ready. Connect wallet, use ← → to move, Space to shoot.');
+            fetchLeaderboard();
+        })();
+    </script>
 </body>
 </html>
-
