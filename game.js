@@ -15,7 +15,6 @@
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
     let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {}, lastShotTime = 0;
     let enemySpawnTimer = 0, difficulty = 1;
-    let enemyIdCounter = 0;
 
     function addLog(msg) {
         const div = document.createElement('div'); 
@@ -43,24 +42,24 @@
         const x = Math.random() * (canvas.width - size); 
         const speed = 1 + Math.random() * difficulty;
         enemies.push({ 
-            id: enemyIdCounter++,
             x, y: -size, width: size, height: size, speed, 
             shootTimer: 0, 
-            shootInterval: 1500/Math.sqrt(difficulty) + Math.random()*500, 
-            direction: Math.random()<0.5?1:-1
+            shootInterval: 1500 + Math.random()*1000/difficulty, 
+            direction: Math.random()<0.5?1:-1,
+            id: Date.now() + Math.random() // unique id để xóa bullets khi enemy chết
         });
     }
 
     function spawnParticles(x, y, color) {
-        const count = 10 + Math.floor(Math.random()*5*difficulty);
+        const count = 10 + Math.floor(Math.random()*5);
         for(let i=0;i<count;i++){
             particles.push({
                 x, y,
-                vx: (Math.random()-0.5)*6,
-                vy: (Math.random()-0.5)*6,
-                radius: 2 + Math.random()*3,
+                vx: (Math.random()-0.5)*4,
+                vy: (Math.random()-0.5)*4,
+                radius: 2 + Math.random()*2,
                 color,
-                life: 20 + Math.random()*20
+                life: 20 + Math.random()*10
             });
         }
     }
@@ -98,64 +97,50 @@
     function update(delta) {
         if (gameOver) return;
 
-        // Update time
+        // Time
         timeLeft -= delta; 
         if (timeLeft <= 0) { 
-            timeLeft = 0;
             gameOver = true; 
             gameOverOverlay.classList.add('visible'); 
             sendTx('score', score); 
-            return;
-        }
-
+            return; 
+        } 
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`; 
 
-        // Difficulty
-        difficulty = 1 + (60000 - timeLeft)/60000 * 3;
-
-        // Spawn multiple enemies per frame based on difficulty
+        // Difficulty & spawn
+        difficulty = 1 + (60000 - timeLeft)/60000 * 2;
         enemySpawnTimer += delta;
-        if (enemySpawnTimer > 1000/Math.min(difficulty,5)) { 
-            for(let i=0;i<Math.ceil(difficulty);i++) spawnEnemy();
+        if (enemySpawnTimer > 1000/difficulty) { 
+            spawnEnemy(); 
             enemySpawnTimer = 0; 
         }
 
         // Player bullets
-        for(let i=bullets.length-1;i>=0;i--){
-            const b = bullets[i];
+        bullets.forEach((b,i)=>{
             b.y -= 8;
-            if(b.y < -b.height) bullets.splice(i,1);
-            else {
-                for(let j=enemies.length-1;j>=0;j--){
-                    const e = enemies[j];
-                    if(isColliding(b,e)){
-                        bullets.splice(i,1); 
-                        enemies.splice(j,1);
-                        score++;
-                        spawnParticles(e.x+e.width/2,e.y+e.height/2,'yellow');
-
-                        // Xóa tất cả đạn của enemy này
-                        enemyBullets = enemyBullets.filter(eb => eb.ownerId !== e.id);
-
-                        break;
-                    }
+            if (b.y < -b.height) bullets.splice(i,1);
+            enemies.forEach((e,j)=>{
+                if(isColliding(b,e)){
+                    bullets.splice(i,1); 
+                    // Xóa bullets của enemy bị hạ
+                    enemyBullets = enemyBullets.filter(eb => eb.ownerId !== e.id);
+                    enemies.splice(j,1);
+                    score++;
+                    spawnParticles(e.x+e.width/2,e.y+e.height/2,'yellow');
                 }
-            }
-        }
+            });
+        });
 
         // Enemy bullets
-        for(let i=enemyBullets.length-1;i>=0;i--){
-            const b = enemyBullets[i];
-            b.y += 2 + difficulty; 
+        enemyBullets.forEach((b,i)=>{
+            b.y += b.speed;
             if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
-            else if(isColliding(b,ship)){
-                enemyBullets.splice(i,1);
+            if(isColliding(b,ship)){
                 gameOver = true;
                 gameOverOverlay.classList.add('visible');
                 sendTx('score', score);
-                return; 
             }
-        }
+        });
 
         // Enemies
         enemies.forEach(e=>{
@@ -166,20 +151,23 @@
             e.shootTimer += delta;
             if(e.shootTimer>e.shootInterval){
                 e.shootTimer=0;
-                const bulletCount = Math.min(3, Math.floor(difficulty));
-                for(let i=0;i<bulletCount;i++){
-                    const offset = (i - Math.floor(bulletCount/2))*8;
-                    enemyBullets.push({ x:e.x+e.width/2-3+offset, y:e.y+e.height, width:6, height:12, speed:2 + Math.random()*difficulty, ownerId:e.id });
-                }
+                const bulletSpeed = 2 + Math.random()*2;
+                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed, ownerId:e.id });
+            }
+
+            // Check ship collision
+            if(isColliding(ship, e)){
+                gameOver = true;
+                gameOverOverlay.classList.add('visible');
+                sendTx('score', score);
             }
         });
 
         // Particles
-        for(let i=particles.length-1;i>=0;i--){
-            const p = particles[i];
+        particles.forEach((p,i)=>{
             p.x += p.vx; p.y += p.vy; p.life--;
             if(p.life<=0) particles.splice(i,1);
-        }
+        });
 
         // Player movement
         if(keysPressed.ArrowLeft){ ship.x -= ship.speed; if(ship.x<0) ship.x=0; }
@@ -244,9 +232,6 @@
         }catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
 
-    // Realtime leaderboard every 1.5s
-    setInterval(fetchLeaderboard, 1500);
-
     connectBtn.addEventListener('click',async ()=>{
         xHandle = xInput.value.trim();
         const provider = window.solana || (window.nightly && window.nightly.solana);
@@ -256,10 +241,18 @@
         addLog('Connected: '+playerPubkey.toBase58());
         connectBtn.disabled=true; xInput.disabled=true;
         await sendTx('register');
-        fetchLeaderboard(); resetGame(); requestAnimationFrame(gameLoop);
+        fetchLeaderboard(); 
+        resetGame(); 
+        requestAnimationFrame(gameLoop);
+
+        // Realtime leaderboard every 3s
+        setInterval(fetchLeaderboard, 3000);
     });
 
-    resetBtn.addEventListener('click',()=>{ resetGame(); requestAnimationFrame(gameLoop); });
+    resetBtn.addEventListener('click',()=>{
+        resetGame(); 
+        requestAnimationFrame(gameLoop); 
+    });
 
     addLog('Ready. Connect wallet, use ← → to move, Space to shoot.');
     fetchLeaderboard();
