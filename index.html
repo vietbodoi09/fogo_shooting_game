@@ -32,7 +32,7 @@ body::before {
   z-index: -1;
 }
 
-/* Layout chính */
+/* Layout */
 .main-layout {
   display: flex;
   justify-content: center;
@@ -41,7 +41,7 @@ body::before {
   flex-wrap: wrap;
 }
 
-/* Box chung */
+/* Panel */
 .panel {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
@@ -54,15 +54,8 @@ body::before {
 .leaderboard {
   width: 260px;
 }
-.leaderboard h3 {
-  text-align: center;
-  margin-bottom: 15px;
-}
-#leaderboardList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
+.leaderboard h3 { text-align: center; margin-bottom: 15px; }
+#leaderboardList { list-style: none; padding: 0; margin: 0; }
 #leaderboardList li {
   display: flex;
   justify-content: space-between;
@@ -74,12 +67,8 @@ body::before {
   color: #fff;
   font-weight: 600;
 }
-#leaderboardList li span:first-child {
-  color: #00ffe0;
-}
-#leaderboardList li span:last-child {
-  color: #ffde59;
-}
+#leaderboardList li span:first-child { color: #00ffe0; }
+#leaderboardList li span:last-child { color: #ffde59; }
 
 /* Game container */
 #gameContainer {
@@ -88,10 +77,7 @@ body::before {
   align-items: center;
   position: relative;
 }
-#game {
-  border-radius: 12px;
-  background: rgba(2,17,26,0.85);
-}
+#game { border-radius: 12px; background: rgba(2,17,26,0.85); }
 #scoreTimer {
   position: absolute;
   top: 10px;
@@ -118,17 +104,12 @@ body::before {
   align-items: center;
   gap: 15px;
   z-index: 5;
-  visibility: hidden; /* Ẩn mặc định */
+  visibility: hidden;
 }
-#gameOverOverlay.visible {
-  visibility: visible;
-}
-#gameOverOverlay h2 {
-  margin: 0;
-  font-size: 28px;
-}
+#gameOverOverlay.visible { visibility: visible; }
+#gameOverOverlay h2 { margin: 0; font-size: 28px; }
 
-/* Button style */
+/* Buttons */
 button {
   border-radius: 12px;
   border: none;
@@ -140,27 +121,12 @@ button {
   cursor: pointer;
   transition: transform 0.2s ease, background 0.3s ease;
 }
-button:hover {
-  transform: scale(1.07);
-  background: linear-gradient(90deg, #ff416c, #ff4b2b);
-}
-button:disabled {
-  background: #555;
-  cursor: not-allowed;
-}
+button:hover { transform: scale(1.07); background: linear-gradient(90deg, #ff416c, #ff4b2b); }
+button:disabled { background: #555; cursor: not-allowed; }
 
-/* Controls Panel */
-.controls-panel {
-  width: 260px;
-}
-.controls-panel input {
-  width: 100%;
-  margin-bottom: 12px;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  font-size: 14px;
-}
+/* Controls panel */
+.controls-panel { width: 260px; }
+.controls-panel input { width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 10px; border: none; font-size: 14px; }
 #logBox {
   margin-top: 15px;
   padding: 10px;
@@ -172,10 +138,7 @@ button:disabled {
   color: #fff;
   font-weight: 600;
 }
-#logBox .logEntry {
-  margin-bottom: 4px;
-  padding: 2px 0;
-}
+#logBox .logEntry { margin-bottom: 4px; padding: 2px 0; }
 </style>
 </head>
 <body>
@@ -200,7 +163,8 @@ button:disabled {
   <!-- Controls -->
   <div class="panel controls-panel">
     <input id="xInput" type="text" placeholder="Your X handle" />
-    <button id="connectBtn">Connect Wallet</button>
+    <input id="walletInput" type="text" placeholder="Your wallet address" />
+    <button id="registerBtn">Register</button>
     <div id="logBox"></div>
   </div>
 </div>
