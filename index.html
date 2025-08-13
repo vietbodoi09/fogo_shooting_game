@@ -19,7 +19,6 @@
             align-items: flex-start;
             gap: 64px;
         }
-
         #gameContainer {
             position: relative;
             width: 480px;
@@ -27,14 +26,12 @@
             flex-direction: column;
             align-items: center;
         }
-
         #game {
             border-radius: 8px;
             background: linear-gradient(#02111a, #071b24);
             display: block;
             margin: 0 auto;
         }
-
         #scoreTimer {
             position: absolute;
             left: 50%;
@@ -49,7 +46,6 @@
             pointer-events: none;
             text-shadow: 0 0 5px #000;
         }
-
         #logBox {
             width: 250px;
             height: 300px;
@@ -63,12 +59,10 @@
             display: flex;
             flex-direction: column-reverse;
         }
-        
         .logEntry {
             padding: 4px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         #controlsPanel {
             display: flex;
             flex-direction: column;
@@ -76,12 +70,10 @@
             align-items: flex-end;
             margin-top: 16px;
         }
-        
         .controlsGroup {
             display: flex;
             gap: 8px;
         }
-
         button {
             padding: 8px 12px;
             border-radius: 6px;
@@ -91,12 +83,10 @@
             cursor: pointer;
             font-weight: 600;
         }
-
         button:disabled {
             background: #666;
             cursor: not-allowed;
         }
-
         #gameOverOverlay {
             position: absolute;
             top: 0;
@@ -116,17 +106,14 @@
             opacity: 0;
             transition: visibility 0s, opacity 0.5s linear;
         }
-
         #gameOverOverlay.visible {
             visibility: visible;
             opacity: 1;
         }
-
         #gameOverOverlay h2 {
             font-size: 32px;
             margin: 0;
         }
-
         #xInput {
             padding: 8px 12px;
             border-radius: 6px;
@@ -136,7 +123,6 @@
             font-family: Inter, Arial;
             margin-right: 8px;
         }
-
         #leaderboard {
             width: 250px;
             background: rgba(15, 30, 50, 0.7);
@@ -144,33 +130,27 @@
             padding: 16px;
             color: #e6eef8;
         }
-
         #leaderboard h3 {
             margin-top: 0;
             text-align: center;
         }
-
         #leaderboard ol {
             padding-left: 20px;
             margin: 0;
         }
-
         #leaderboard li {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
         }
-
         #leaderboard li:nth-child(1) {
             color: gold;
             font-weight: bold;
         }
-
         #leaderboard li:nth-child(2) {
             color: silver;
             font-weight: bold;
         }
-
         #leaderboard li:nth-child(3) {
             color: #cd7f32;
             font-weight: bold;
@@ -183,7 +163,6 @@
             <h3>Leaderboard</h3>
             <ol id="leaderboardList"></ol>
         </aside>
-
         <div id="gameContainer">
             <canvas id="game" width="480" height="640"></canvas>
             <div id="gameOverOverlay">
@@ -192,7 +171,6 @@
             </div>
             <div id="scoreTimer">Score: 0 | Time: 60</div>
         </div>
-
         <div>
             <div id="controlsPanel">
                 <input id="xInput" type="text" placeholder="Your X handle" />
@@ -201,7 +179,6 @@
             <div id="logBox"></div>
         </div>
     </div>
-    
     <script>
         (async () => {
             const connection = new window.solanaWeb3.Connection('https://testnet.fogo.io', 'confirmed');
@@ -214,7 +191,6 @@
             const gameOverOverlay = document.getElementById('gameOverOverlay');
             const xInput = document.getElementById('xInput');
             const leaderboardList = document.getElementById('leaderboardList');
-
             const defaults = {
                 shipX: canvas.width / 2 - 25,
                 shipY: canvas.height - 60,
@@ -227,7 +203,6 @@
                 timeLimitMs: 60 * 1000,
                 shotCooldownMs: 200,
             };
-
             let playerPubkey = null;
             let xHandle = null;
             let ship = {};
@@ -244,16 +219,13 @@
             const speedIncreaseInterval = 15000;
             const speedIncreaseAmount = 0.2;
             let enemyIdCounter = 0;
-
             const maxLogs = 15;
             let logs = [];
-
             function addLog(msg) {
                 logs.push(msg);
                 if (logs.length > maxLogs) logs.shift();
                 renderLogs();
             }
-
             function renderLogs() {
                 logBox.innerHTML = '';
                 for (let i = logs.length - 1; i >= 0; i--) {
@@ -263,7 +235,6 @@
                     logBox.appendChild(div);
                 }
             }
-
             function isColliding(a, b) {
                 return (
                     a.x < b.x + b.width &&
@@ -272,7 +243,6 @@
                     a.y + a.height > b.y
                 );
             }
-
             function resetGame() {
                 ship = {
                     x: defaults.shipX,
@@ -296,7 +266,6 @@
                 difficultyTimer = 0;
                 enemyIdCounter = 0;
             }
-
             function spawnEnemy() {
                 const enemySize = 40;
                 const x = Math.random() * (canvas.width - enemySize);
@@ -311,36 +280,30 @@
                     shootInterval: 1500 + Math.random() * 1000,
                 });
             }
-
             function drawShip() {
                 ctx.fillStyle = '#4caf50';
                 ctx.fillRect(ship.x, ship.y, ship.width, ship.height);
             }
-
             function drawBullets() {
                 ctx.fillStyle = '#ffde59';
                 bullets.forEach(bullet => {
                     ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
                 });
             }
-
             function drawEnemies() {
                 ctx.fillStyle = '#d32f2f';
                 enemies.forEach(enemy => {
                     ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
                 });
             }
-
             function drawEnemyBullets() {
                 ctx.fillStyle = '#ff6e6e';
                 enemyBullets.forEach(bullet => {
                     ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
                 });
             }
-
             function update(deltaTime) {
                 if (gameOver) return;
-
                 timeLeft -= deltaTime;
                 if (timeLeft <= 0) {
                     gameOver = true;
@@ -350,7 +313,6 @@
                     return;
                 }
                 scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft / 1000)}`;
-
                 difficultyTimer += deltaTime;
                 if (difficultyTimer >= speedIncreaseInterval) {
                     defaults.enemyMinSpeed += speedIncreaseAmount;
@@ -358,12 +320,10 @@
                     addLog(`Difficulty increased! New enemy speed: ${defaults.enemyMinSpeed.toFixed(1)} - ${defaults.enemyMaxSpeed.toFixed(1)}`);
                     difficultyTimer = 0;
                 }
-
                 if (Date.now() - lastEnemySpawn > defaults.enemySpawnInterval) {
                     spawnEnemy();
                     lastEnemySpawn = Date.now();
                 }
-
                 enemies.forEach(enemy => {
                     enemy.y += enemy.speed;
                     enemy.shootTimer += deltaTime;
@@ -380,17 +340,14 @@
                     }
                 });
                 enemies = enemies.filter(e => e.y <= canvas.height);
-
                 bullets.forEach((bullet, i) => {
                     bullet.y -= defaults.bulletSpeed;
                     if (bullet.y < -bullet.height) bullets.splice(i, 1);
                 });
-
                 enemyBullets.forEach((bullet, i) => {
                     bullet.y += bullet.speed;
                     if (bullet.y > canvas.height + bullet.height) enemyBullets.splice(i, 1);
                 });
-
                 bullets.forEach((bullet, bi) => {
                     enemies.forEach((enemy, ei) => {
                         if (isColliding(bullet, enemy)) {
@@ -404,7 +361,6 @@
                         }
                     });
                 });
-
                 enemyBullets.forEach(bullet => {
                     if (isColliding(bullet, ship)) {
                         gameOver = true;
@@ -413,7 +369,6 @@
                         sendTx('score', score);
                     }
                 });
-
                 enemies.forEach(enemy => {
                     if (isColliding(ship, enemy)) {
                         gameOver = true;
@@ -422,7 +377,6 @@
                         sendTx('score', score);
                     }
                 });
-
                 if (keysPressed.ArrowLeft) {
                     ship.x -= ship.speed;
                     if (ship.x < 0) ship.x = 0;
@@ -432,7 +386,6 @@
                     if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width;
                 }
             }
-
             function draw() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#02111a';
@@ -442,7 +395,6 @@
                 drawEnemies();
                 drawEnemyBullets();
             }
-
             function shootBullet() {
                 bullets.push({
                     x: ship.x + ship.width / 2 - 5,
@@ -453,9 +405,7 @@
                 });
                 addLog('Player shot!');
             }
-
             const PAYMASTER_URL = 'http://38.54.95.201:3000';
-
             async function sendTx(action, value = null) {
                 if (!playerPubkey) {
                     addLog('Connect wallet first');
@@ -503,7 +453,6 @@
                     return false;
                 }
             }
-
             async function fetchLeaderboard() {
                 const pmUrl = `${PAYMASTER_URL}/leaderboard`;
                 try {
@@ -520,7 +469,6 @@
                     addLog(`Error fetching leaderboard: ${e.message || e}`);
                 }
             }
-
             function renderLeaderboard(leaderboardData) {
                 leaderboardList.innerHTML = '';
                 leaderboardData.forEach((player, index) => {
@@ -533,7 +481,6 @@
                     leaderboardList.appendChild(li);
                 });
             }
-
             let lastFrameTime = 0;
             function gameLoop(timestamp) {
                 if (!lastFrameTime) lastFrameTime = timestamp;
@@ -543,7 +490,6 @@
                 draw();
                 if (!gameOver) requestAnimationFrame(gameLoop);
             }
-
             window.addEventListener('keydown', async e => {
                 if (gameOver) return;
                 if (!playerPubkey) {
@@ -562,11 +508,9 @@
                 }
                 keysPressed[e.code] = true;
             });
-
             window.addEventListener('keyup', e => {
                 keysPressed[e.code] = false;
             });
-
             connectBtn.addEventListener('click', async () => {
                 if (playerPubkey) {
                     addLog('Already connected');
@@ -594,8 +538,7 @@
                     if (typeof pk === 'string') pk = new window.solanaWeb3.PublicKey(pk);
                     playerPubkey = pk;
                     addLog('Connected: ' + playerPubkey.toBase58());
-                    await sendTx('register'); // Sửa lỗi ở đây
-                    
+                    await sendTx('register');  
                     connectBtn.disabled = true;
                     resetBtn.disabled = false;
                     xInput.disabled = true;
@@ -606,7 +549,6 @@
                     addLog('Connect failed: ' + (e.message || e));
                 }
             });
-
             resetBtn.addEventListener('click', () => {
                 if (!playerPubkey) {
                     addLog('Connect wallet first');
@@ -615,9 +557,12 @@
                 resetGame();
                 requestAnimationFrame(gameLoop);
             });
-
             addLog('Ready. Connect wallet, use ← → to move, Space to shoot.');
             fetchLeaderboard();
+            // Initial game setup to prevent blank screen
+            resetGame();
+            gameOver = true; // Keep game paused until wallet is connected
+            requestAnimationFrame(gameLoop);
         })();
     </script>
 </body>
