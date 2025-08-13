@@ -245,8 +245,8 @@
         resetGame(); 
         requestAnimationFrame(gameLoop);
 
-        // Realtime leaderboard every 3s
-        setInterval(fetchLeaderboard, 3000);
+        // Realtime leaderboard every 5s
+        setInterval(fetchLeaderboard, 5000);
     });
 
     resetBtn.addEventListener('click',()=>{
