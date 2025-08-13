@@ -15,6 +15,7 @@
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
     let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {}, lastShotTime = 0;
     let enemySpawnTimer = 0, difficulty = 1;
+    let enemyIdCounter = 0;
 
     function addLog(msg) {
         const div = document.createElement('div'); 
@@ -42,23 +43,24 @@
         const x = Math.random() * (canvas.width - size); 
         const speed = 1 + Math.random() * difficulty;
         enemies.push({ 
+            id: enemyIdCounter++,
             x, y: -size, width: size, height: size, speed, 
             shootTimer: 0, 
-            shootInterval: 1500 + Math.random()*1000/difficulty, 
+            shootInterval: 1500/Math.sqrt(difficulty) + Math.random()*500, 
             direction: Math.random()<0.5?1:-1
         });
     }
 
     function spawnParticles(x, y, color) {
-        const count = 10 + Math.floor(Math.random()*5);
+        const count = 10 + Math.floor(Math.random()*5*difficulty);
         for(let i=0;i<count;i++){
             particles.push({
                 x, y,
-                vx: (Math.random()-0.5)*4,
-                vy: (Math.random()-0.5)*4,
-                radius: 2 + Math.random()*2,
+                vx: (Math.random()-0.5)*6,
+                vy: (Math.random()-0.5)*6,
+                radius: 2 + Math.random()*3,
                 color,
-                life: 20 + Math.random()*10
+                life: 20 + Math.random()*20
             });
         }
     }
@@ -103,15 +105,18 @@
             gameOver = true; 
             gameOverOverlay.classList.add('visible'); 
             sendTx('score', score); 
+            return;
         }
 
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`; 
 
         // Difficulty
-        difficulty = 1 + (60000 - timeLeft)/60000 * 2;
+        difficulty = 1 + (60000 - timeLeft)/60000 * 3;
+
+        // Spawn multiple enemies per frame based on difficulty
         enemySpawnTimer += delta;
-        if (enemySpawnTimer > 1000/difficulty) { 
-            spawnEnemy(); 
+        if (enemySpawnTimer > 1000/Math.min(difficulty,5)) { 
+            for(let i=0;i<Math.ceil(difficulty);i++) spawnEnemy();
             enemySpawnTimer = 0; 
         }
 
@@ -128,6 +133,10 @@
                         enemies.splice(j,1);
                         score++;
                         spawnParticles(e.x+e.width/2,e.y+e.height/2,'yellow');
+
+                        // Xóa tất cả đạn của enemy này
+                        enemyBullets = enemyBullets.filter(eb => eb.ownerId !== e.id);
+
                         break;
                     }
                 }
@@ -137,13 +146,14 @@
         // Enemy bullets
         for(let i=enemyBullets.length-1;i>=0;i--){
             const b = enemyBullets[i];
-            b.y += b.speed;
+            b.y += 2 + difficulty; // đạn mạnh hơn theo difficulty
             if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
             else if(isColliding(b,ship)){
                 enemyBullets.splice(i,1);
                 gameOver = true;
                 gameOverOverlay.classList.add('visible');
                 sendTx('score', score);
+                return; // dừng update ngay
             }
         }
 
@@ -156,8 +166,11 @@
             e.shootTimer += delta;
             if(e.shootTimer>e.shootInterval){
                 e.shootTimer=0;
-                const bulletSpeed = 2 + Math.random()*2;
-                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed });
+                const bulletCount = Math.min(3, Math.floor(difficulty));
+                for(let i=0;i<bulletCount;i++){
+                    const offset = (i - Math.floor(bulletCount/2))*8;
+                    enemyBullets.push({ x:e.x+e.width/2-3+offset, y:e.y+e.height, width:6, height:12, speed:2 + Math.random()*difficulty, ownerId:e.id });
+                }
             }
         });
 
