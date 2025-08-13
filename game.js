@@ -184,7 +184,7 @@
     window.addEventListener('keydown', e=>{
         keysPressed[e.code]=true;
         if(e.code==='Space'){
-            if(Date.now()-lastShotTime>0.1){
+            if(Date.now()-lastShotTime>0){
                 lastShotTime = Date.now();
                 if(!playerPubkey){ addLog('Register first'); return; }
                 bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 });
