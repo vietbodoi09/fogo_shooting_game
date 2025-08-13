@@ -340,7 +340,7 @@
                     }
                 });
                 enemies = enemies.filter(e => e.y <= canvas.height);
-                bullets.forEach((bullet, i) => {
+                bullets.forEach((bullet, bi) => {
                     bullet.y -= defaults.bulletSpeed;
                     if (bullet.y < -bullet.height) bullets.splice(i, 1);
                 });
@@ -394,16 +394,6 @@
                 drawBullets();
                 drawEnemies();
                 drawEnemyBullets();
-            }
-            function shootBullet() {
-                bullets.push({
-                    x: ship.x + ship.width / 2 - 5,
-                    y: ship.y - 10,
-                    width: 10,
-                    height: 20,
-                    speed: defaults.bulletSpeed,
-                });
-                addLog('Player shot!');
             }
             const PAYMASTER_URL = 'http://38.54.95.201:3000';
             async function sendTx(action, value = null) {
@@ -538,7 +528,7 @@
                     if (typeof pk === 'string') pk = new window.solanaWeb3.PublicKey(pk);
                     playerPubkey = pk;
                     addLog('Connected: ' + playerPubkey.toBase58());
-                    await sendTx('register');  
+                    await sendTx('register');  
                     connectBtn.disabled = true;
                     resetBtn.disabled = false;
                     xInput.disabled = true;
