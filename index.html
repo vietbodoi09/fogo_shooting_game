@@ -137,7 +137,7 @@
     function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#02111a'; ctx.fillRect(0,0,canvas.width,canvas.height); drawShip(); drawBullets(); drawEnemies(); drawEnemyBullets(); }
 
     // **SỬA: DÙNG CLOUDFARE TUNNEL URL**
-    const PAYMASTER_URL='https://connect-broker-toner-choosing.trycloudflare.com';
+    const PAYMASTER_URL='https://38.54.95.201:3000';
 
     async function sendTx(action,value=null){
         if(!playerPubkey){ addLog('Connect wallet first'); return false; }
@@ -208,4 +208,5 @@
 </script>
 </body>
 </html>
+
 
