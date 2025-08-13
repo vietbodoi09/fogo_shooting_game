@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 
 <style>
-/* Font đẹp từ Google Fonts */
+/* Font từ Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
 
 /* Toàn bộ trang */
@@ -44,27 +44,22 @@ body::before {
 .container {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 30px;
-  height: 100vh;
-  padding: 20px;
+  padding: 40px;
 }
 
-/* Panel kiểu kính mờ */
+/* Box chung cho Game Panel và Leaderboard */
 .game-panel, .leaderboard {
+  width: 450px;
+  min-height: 400px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 25px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.game-panel:hover, .leaderboard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
 }
 
 /* Tiêu đề */
@@ -96,21 +91,10 @@ button:hover {
   background: linear-gradient(90deg, #ff416c, #ff4b2b);
 }
 
-/* Hiệu ứng ánh sáng nền */
-@keyframes floating-lights {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-body {
-  background-size: cover;
-  animation: floating-lights 20s ease infinite;
-}
-
+/* Game container */
 #gameContainer {
   position: relative;
-  width: 480px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -139,26 +123,11 @@ body {
   text-shadow: 0 0 8px #000;
 }
 
-button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-}
-
 button:disabled {
   background: #555;
   cursor: not-allowed;
 }
+
 
 </style>
 </head>
@@ -193,6 +162,7 @@ button:disabled {
 
 </body>
 </html>
+
 
 
 
