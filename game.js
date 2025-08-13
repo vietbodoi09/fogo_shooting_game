@@ -6,7 +6,7 @@
     const logBox = document.getElementById('logBox');
     const xInput = document.getElementById('xInput');
     const walletInput = document.getElementById('walletInput');
-    const registerBtn = document.getElementById('registerBtn');
+    const registerBtn = document.getElementById('connectBtn');
     const resetBtn = document.getElementById('resetBtn');
     const leaderboardList = document.getElementById('leaderboardList');
     const gameOverOverlay = document.getElementById('gameOverOverlay');
@@ -14,7 +14,7 @@
     let playerPubkey = null, xHandle = null;
     let ship = { x: canvas.width/2-25, y: canvas.height-60, width: 50, height: 20, speed: 4 };
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
-    let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {}, lastShotTime = 0;
+    let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {};
     let enemySpawnTimer = 0, difficulty = 1;
 
     const connection = new solanaWeb3.Connection("https://testnet.fogo.io", "confirmed");
@@ -36,7 +36,7 @@
         bullets = []; enemies = []; enemyBullets = []; particles = [];
         score = 0; timeLeft = 60000; gameOver = false;
         enemySpawnTimer = 0; difficulty = 1;
-        gameOverOverlay.classList.remove('visible');
+        gameOverOverlay.style.visibility = 'hidden';
         addLog('Game reset');
     }
 
@@ -102,7 +102,7 @@
         timeLeft -= delta; 
         if (timeLeft <= 0) { 
             gameOver = true; 
-            gameOverOverlay.classList.add('visible');
+            gameOverOverlay.style.visibility = 'visible';
             sendTx('score', score); 
             return; 
         } 
@@ -125,7 +125,6 @@
                     bullets.splice(i,1); enemies.splice(j,1);
                     score++;
                     spawnParticles(e.x+e.width/2,e.y+e.height/2,'yellow');
-                    // Remove enemy bullets hitting this enemy
                     enemyBullets = enemyBullets.filter(eb=>!(eb.x>e.x && eb.x<e.x+e.width && eb.y>e.y && eb.y<e.y+e.height));
                 }
             });
@@ -137,7 +136,7 @@
             if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
             if(isColliding(b,ship)){
                 gameOver = true;
-                gameOverOverlay.classList.add('visible');
+                gameOverOverlay.style.visibility = 'visible';
                 sendTx('score', score);
             }
         });
@@ -157,7 +156,7 @@
 
             if(isColliding(ship,e)){
                 gameOver = true;
-                gameOverOverlay.classList.add('visible');
+                gameOverOverlay.style.visibility = 'visible';
                 sendTx('score', score);
             }
         });
@@ -184,25 +183,25 @@
     window.addEventListener('keydown', e=>{
         keysPressed[e.code]=true;
         if(e.code==='Space'){
-            if(Date.now()-lastShotTime>0){
-                lastShotTime = Date.now();
-                if(!playerPubkey){ addLog('Register first'); return; }
-                bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 });
-                const body = { action:'shoot', player:playerPubkey.toBase58(), timestamp:Date.now(), shipX:ship.x };
-                fetch(PAYMASTER_URL,{
-                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
-                }).then(async resp=>{
-                    if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
-                    const data = await resp.json();
-                    if(data.txSignature) addLog(`Tx: ${data.txSignature}`);
-                }).catch(e=>addLog('Tx error: '+(e.message||e)));
-            }
+            if(!playerPubkey){ addLog('Please register first'); return; }
+
+            const body = { action:'shoot', player:playerPubkey.toBase58(), timestamp:Date.now(), shipX:ship.x };
+            fetch(PAYMASTER_URL,{
+                method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+            }).then(async resp=>{
+                if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
+                const data = await resp.json();
+                if(data.txSignature){
+                    addLog(`Transaction successful: ${data.txSignature}`);
+                    bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 });
+                } else { addLog('Transaction failed'); }
+            }).catch(e=>addLog('Transaction error: '+(e.message||e)));
         }
     });
     window.addEventListener('keyup', e=>{ keysPressed[e.code]=false; });
 
     async function sendTx(action,value=null){
-        if(!playerPubkey){ addLog('Register first'); return; }
+        if(!playerPubkey){ addLog('Please register first'); return; }
         try{
             const body={ action, player:playerPubkey.toBase58() };
             if(action==='register' && xHandle) body.xHandle=xHandle;
@@ -210,8 +209,8 @@
             const resp=await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
             if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
             const data=await resp.json();
-            if(data.txSignature) addLog(`Tx: ${data.txSignature}`);
-        }catch(e){ addLog('Tx error: '+(e.message||e)); }
+            if(data.txSignature) addLog(`Transaction successful: ${data.txSignature}`);
+        }catch(e){ addLog('Transaction error: '+(e.message||e)); }
     }
 
     async function fetchLeaderboard(){ 
@@ -225,9 +224,11 @@
                 li.innerHTML=`<span>${p.xHandle||p.player.slice(0,4)+'...'}</span><span>${p.score}</span>`;
                 leaderboardList.appendChild(li);
             });
-        }catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
+            return data;
+        }catch(e){ addLog('Leaderboard error: '+(e.message||e)); return []; }
     }
 
+    // Register button
     registerBtn.addEventListener('click', async ()=>{
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
@@ -240,8 +241,10 @@
         const balance = await connection.getBalance(pubkey);
         if(balance/1e9 < 0.1){ addLog('Wallet must have ≥0.1 FOGO'); return; }
 
-        playerPubkey = pubkey; xHandle = xHandleVal;
+        const leaderboard = await fetchLeaderboard();
+        if(leaderboard.some(p=>p.xHandle===xHandleVal)){ addLog('X handle already exists'); return; }
 
+        playerPubkey = pubkey; xHandle = xHandleVal;
         await sendTx('register');
         addLog(`Registered ${xHandle} (${playerPubkey.toBase58()})`);
         registerBtn.disabled=true; walletInput.disabled=true; xInput.disabled=true;
@@ -253,6 +256,9 @@
     resetBtn.addEventListener('click',()=>{ resetGame(); requestAnimationFrame(gameLoop); });
 
     addLog('Ready. Enter X handle & wallet, then press Register. Use ← → to move, Space to shoot.');
+
+    // Realtime leaderboard update every 5 seconds
     fetchLeaderboard();
-    setInterval(fetchLeaderboard,5000);
+    setInterval(fetchLeaderboard, 5000);
+
 })();
