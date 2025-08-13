@@ -136,7 +136,8 @@
 
     function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#02111a'; ctx.fillRect(0,0,canvas.width,canvas.height); drawShip(); drawBullets(); drawEnemies(); drawEnemyBullets(); }
 
-    const PAYMASTER_URL='https://38.54.95.201:3000';
+    // **SỬA: DÙNG CLOUDFARE TUNNEL URL**
+    const PAYMASTER_URL='https://equal-rr-lbs-mae.trycloudflare.com';
 
     async function sendTx(action,value=null){
         if(!playerPubkey){ addLog('Connect wallet first'); return false; }
@@ -150,7 +151,10 @@
             const data=await resp.json();
             if(data.txSignature){
                 addLog(`Tx submitted: ${data.txSignature}`);
-                connection.confirmTransaction(data.txSignature,'processed').then(()=>{ addLog(`Tx processed: ${data.txSignature}`); if(action==='score'||action==='register') fetchLeaderboard(); }).catch(e=>addLog(`Tx confirm error: ${e.message||e}`));
+                connection.confirmTransaction(data.txSignature,'processed').then(()=>{
+                    addLog(`Tx processed: ${data.txSignature}`);
+                    if(action==='score'||action==='register') fetchLeaderboard();
+                }).catch(e=>addLog(`Tx confirm error: ${e.message||e}`));
                 return true;
             }
             throw new Error('Unexpected paymaster response: '+JSON.stringify(data));
