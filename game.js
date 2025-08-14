@@ -56,7 +56,7 @@
     }
 
     function spawnEnemy() {
-        const size = 40;
+        const size = 60;
         const x = Math.random() * (canvas.width - size);
         const speed = 1 + Math.random() * difficulty;
 
@@ -159,7 +159,7 @@
             e.shootTimer+=delta;
             if(e.shootTimer>e.shootInterval){
                 e.shootTimer=0;
-                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:2+Math.random()*2 });
+                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:10, height:18, speed:2+Math.random()*2 });
             }
             if(isColliding(ship,e)){ gameOver=true; gameOverOverlay.classList.add('visible'); sendTx('score',score); break; }
         }
@@ -193,7 +193,7 @@
             const resp = await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
             if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
             const data = await resp.json();
-            if(data.txSignature){ addLog(`Tx: ${data.txSignature}`); bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:5, height:10 }); }
+            if(data.txSignature){ addLog(`Tx: ${data.txSignature}`); bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:10, height:18 }); }
         }catch(err){ addLog('Tx error: '+(err.message||err)); }
     });
 
