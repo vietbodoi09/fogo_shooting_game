@@ -164,8 +164,8 @@ button:disabled { background: #555; cursor: not-allowed; }
   <!-- Game -->
   <div id="gameContainer" class="panel">
     <canvas id="game" width="480" height="640"></canvas>
-    <div id="scoreTimer">Score: 0 | Time: 60</div>
-    <div id="pendingTx">Pending Tx: 0</div> <!-- thêm dòng hiển thị pending tx -->
+    <div id="scoreTimer">Score: 0 | Time: 0s</div>
+    <div id="pendingTx">Pending Tx: 0</div>
     <div id="gameOverOverlay">
       <h2>Game Over!</h2>
       <button id="resetBtn">Play Again</button>
@@ -181,6 +181,7 @@ button:disabled { background: #555; cursor: not-allowed; }
   </div>
 </div>
 
+<!-- game.js -->
 <script src="game.js"></script>
 </body>
 </html>
