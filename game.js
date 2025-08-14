@@ -124,7 +124,7 @@
         timeLeft -= delta;
         enemySpawnTimer += delta;
 
-        if (enemySpawnTimer > 1200 / difficulty) { spawnEnemy(); enemySpawnTimer = 0; }
+        if (enemySpawnTimer > 2000 / difficulty) { spawnEnemy(); enemySpawnTimer = 0; }
 
         // Player movement
         if (keysPressed.ArrowLeft) { ship.x -= ship.speed; if (ship.x < 0) ship.x = 0; }
