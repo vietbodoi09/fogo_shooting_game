@@ -23,7 +23,7 @@
 
     // --- Game state ---
     let playerPubkey = null, xHandle = null;
-    let ship, bullets, enemies, enemyBullets, particles;
+    let ship, bullets, enemies, particles;
     let score = 0, gameOver = true;
     let keysPressed = {}, enemySpawnTimer = 0, difficulty = 1, elapsedTime = 0;
     let pendingTxCount = 0;
@@ -42,21 +42,21 @@
     }
 
     function isColliding(a, b) {
-        return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+        return a.x < b.x + b.width && a.x + a.width > b.x &&
+               a.y < b.y + b.height && a.y + a.height > b.y;
     }
 
     // --- Game logic ---
     function resetGame() {
-        ship = { x: canvas.width / 2 - 25, y: canvas.height - 110, width: 70, height: 80, speed: 4 };
+        ship = { x: canvas.width / 2 - 35, y: canvas.height - 110, width: 70, height: 80, speed: 4 };
         bullets = [];
         enemies = [];
-        enemyBullets = [];
         particles = [];
         score = 0;
         gameOver = false;
         enemySpawnTimer = 0;
-        elapsedTime = 0;
         difficulty = 1;
+        elapsedTime = 0;
         gameOverOverlay.classList.remove('visible');
         addLog('Game reset.');
     }
@@ -96,17 +96,21 @@
 
         if (shipImg.complete) ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
 
+        // Player bullets
         ctx.fillStyle = '#ffde59';
         bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
+        // Enemies
         enemies.forEach(e => {
             if (e.img && e.img.complete) ctx.drawImage(e.img, e.x, e.y, e.width, e.height);
             else { ctx.fillStyle = 'red'; ctx.fillRect(e.x, e.y, e.width, e.height); }
+
+            // Enemy bullets
+            ctx.fillStyle = '#ff6e6e';
+            e.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
         });
 
-        ctx.fillStyle = '#ff6e6e';
-        enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-
+        // Particles
         particles.forEach(p => {
             ctx.fillStyle = p.color;
             ctx.beginPath();
@@ -121,12 +125,11 @@
         elapsedTime += delta;
         enemySpawnTimer += delta;
 
-        // Tăng dần độ khó theo thời gian
-        difficulty = 1 + elapsedTime / 10000; // 
-
-        if (enemySpawnTimer > 3000 / difficulty) { 
-            spawnEnemy(); 
-            enemySpawnTimer = 0; 
+        // Spawn enemy theo difficulty
+        const spawnRate = Math.max(2500 - difficulty * 1000, 500);
+        if (enemySpawnTimer > spawnRate) {
+            spawnEnemy();
+            enemySpawnTimer = 0;
         }
 
         // Player movement
@@ -137,69 +140,67 @@
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             b.y -= 10; // đạn to hơn
+            b.width = 8; b.height = 20;
             if (b.y < -b.height) { bullets.splice(i, 1); continue; }
             for (let j = enemies.length - 1; j >= 0; j--) {
                 const e = enemies[j];
                 if (isColliding(b, e)) {
-                    spawnParticles(e.x + e.width / 2, e.y + e.height / 2, 'yellow');
-                    // Xoá tất cả đạn của enemy khi nó chết
-                    e.bullets.forEach(bullet => {
-                        const idx = enemyBullets.indexOf(bullet);
-                        if (idx > -1) enemyBullets.splice(idx, 1);
-                    });
-                    enemies.splice(j, 1);
-                    bullets.splice(i, 1);
+                    spawnParticles(e.x + e.width/2, e.y + e.height/2, 'yellow');
+                    bullets.splice(i,1);
+                    enemies.splice(j,1); // enemy chết -> đạn biến mất
                     score++;
                     break;
                 }
             }
         }
 
-        // Enemy bullets
-        for (let i = enemyBullets.length - 1; i >= 0; i--) {
-            const b = enemyBullets[i];
-            b.y += b.speed;
-            if (b.y > canvas.height + b.height) { enemyBullets.splice(i, 1); continue; }
-            if (isColliding(b, ship)) { 
-                gameOver = true; 
-                gameOverOverlay.classList.add('visible'); 
-                sendTx('score', score); 
-                break; 
-            }
-        }
-
-        // Enemies
+        // Enemy bullets & enemies
         for (let i = enemies.length - 1; i >= 0; i--) {
             const e = enemies[i];
-            e.y += e.speed; e.x += e.direction * 1.5;
+            e.y += e.speed;
+            e.x += e.direction * 1.5;
             if (e.x < 0 || e.x + e.width > canvas.width) e.direction *= -1;
-            if (e.y > canvas.height) { enemies.splice(i, 1); continue; }
 
+            // Enemy shoots
             e.shootTimer += delta;
             if (e.shootTimer > e.shootInterval) {
                 e.shootTimer = 0;
-                const bullet = { x: e.x + e.width / 2 - 3, y: e.y + e.height, width: 6, height: 16, speed: 2 + Math.random() * 2 };
-                enemyBullets.push(bullet);
-                e.bullets.push(bullet);
+                e.bullets.push({ x: e.x + e.width/2 - 5, y: e.y + e.height, width: 10, height: 16, speed: 2 + Math.random()*2 });
             }
 
-            if (isColliding(ship, e)) { 
+            // Update enemy bullets
+            for (let j = e.bullets.length - 1; j >= 0; j--) {
+                const b = e.bullets[j];
+                b.y += b.speed;
+                if (b.y > canvas.height + b.height) e.bullets.splice(j,1);
+                if (isColliding(b, ship)) {
+                    gameOver = true;
+                    gameOverOverlay.classList.add('visible');
+                    sendTx('score', score);
+                }
+            }
+
+            if (e.y > canvas.height) enemies.splice(i,1);
+            if (isColliding(ship,e)) { 
                 gameOver = true; 
                 gameOverOverlay.classList.add('visible'); 
                 sendTx('score', score); 
-                break; 
             }
         }
 
         // Particles
-        for (let i = particles.length - 1; i >= 0; i--) { 
-            const p = particles[i]; 
-            p.x += p.vx; p.y += p.vy; p.life--; 
-            if (p.life <= 0) particles.splice(i, 1); 
+        for (let i = particles.length - 1; i >=0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            if (p.life <= 0) particles.splice(i,1);
         }
 
-        scoreTimerEl.textContent = `Score: ${score}`; // chỉ hiện score
+        // Update score & difficulty
+        scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.floor(elapsedTime/1000)}s`;
         updatePendingDisplay();
+        difficulty = 1 + elapsedTime / 60000; // tăng dần theo thời gian
     }
 
     function gameLoop(ts) {
@@ -217,82 +218,74 @@
     window.addEventListener('keydown', async e => {
         if (e.code !== 'Space' || gameOver) return;
         if (!playerPubkey) { addLog('Register first'); return; }
-        if (pendingTxCount >= MAX_PENDING_TX) { addLog('Wait for pending transaction(s) to process.'); return; }
+        if (pendingTxCount >= MAX_PENDING_TX) { addLog('Wait for pending tx'); return; }
 
-        bullets.push({ x: ship.x + ship.width / 2 - 5, y: ship.y - 10, width: 10, height: 20 }); // đạn nhân vật lớn hơn
+        bullets.push({ x: ship.x + ship.width/2 - 4, y: ship.y - 20, width: 8, height: 20 });
 
         pendingTxCount++;
         updatePendingDisplay();
         const body = { action: 'shoot', player: playerPubkey.toBase58(), timestamp: Date.now(), shipX: ship.x };
 
         try {
-            const resp = await fetch(PAYMASTER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!resp.ok) { addLog('Paymaster error ' + resp.status); }
-            else {
-                const data = await resp.json();
-                if (data.txSignature) addLog(`Tx: ${data.txSignature}`);
-            }
-        } catch (err) {
-            addLog('Tx error: ' + (err.message || err));
-        } finally {
-            pendingTxCount--;
-            updatePendingDisplay();
-        }
+            const resp = await fetch(PAYMASTER_URL, { method: 'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            if(!resp.ok) addLog('Paymaster error ' + resp.status);
+            else { const data = await resp.json(); if(data.txSignature) addLog(`Tx: ${data.txSignature}`); }
+        } catch(err) { addLog('Tx error: '+(err.message||err)); }
+        finally { pendingTxCount--; updatePendingDisplay(); }
     });
 
-    async function sendTx(action, value = null) {
-        if (!playerPubkey) { addLog('Register first'); return; }
-        try {
+    async function sendTx(action, value=null){
+        if(!playerPubkey){ addLog('Register first'); return; }
+        try{
             const body = { action, player: playerPubkey.toBase58() };
-            if (action === 'register' && xHandle) body.xHandle = xHandle;
-            if (action === 'score') body.score = value;
-            const resp = await fetch(PAYMASTER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!resp.ok) { addLog('Paymaster error ' + resp.status); return; }
+            if(action==='register' && xHandle) body.xHandle = xHandle;
+            if(action==='score') body.score = value;
+            const resp = await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
             const data = await resp.json();
-            if (data.txSignature) addLog(`Tx: ${data.txSignature}`);
-        } catch (e) { addLog('Tx error: ' + (e.message || e)); }
+            if(data.txSignature) addLog(`Tx: ${data.txSignature}`);
+        } catch(e){ addLog('Tx error: '+(e.message||e)); }
     }
 
-    async function fetchLeaderboard() {
-        try {
-            const resp = await fetch(PAYMASTER_URL + '/leaderboard');
-            if (!resp.ok) { addLog('Leaderboard fetch error'); return; }
+    async function fetchLeaderboard(){
+        try{
+            const resp = await fetch(PAYMASTER_URL+'/leaderboard');
+            if(!resp.ok){ addLog('Leaderboard fetch error'); return; }
             const data = await resp.json();
-            leaderboardList.innerHTML = '';
-            data.forEach(p => {
+            leaderboardList.innerHTML='';
+            data.forEach(p=>{
                 const li = document.createElement('li');
-                li.innerHTML = `<span>${p.xHandle || p.player.slice(0, 4) + '...'}</span><span>${p.score}</span>`;
+                li.innerHTML = `<span>${p.xHandle||p.player.slice(0,4)+'...'}</span><span>${p.score}</span>`;
                 leaderboardList.appendChild(li);
             });
-        } catch (e) { addLog('Leaderboard error: ' + (e.message || e)); }
+        } catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
 
-    registerBtn.addEventListener('click', async () => {
+    registerBtn.addEventListener('click', async ()=>{
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
-        if (!walletAddr || !xHandleVal) { addLog('Enter X handle & wallet'); return; }
-
+        if(!walletAddr||!xHandleVal){ addLog('Enter X handle & wallet'); return; }
         let pubkey;
-        try { pubkey = new solanaWeb3.PublicKey(walletAddr); } catch (e) { addLog('Invalid wallet'); return; }
+        try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } catch(e){ addLog('Invalid wallet'); return; }
         playerPubkey = pubkey; xHandle = xHandleVal;
 
-        try {
-            const body = { action: 'register', player: playerPubkey.toBase58(), xHandle };
-            const resp = await fetch(PAYMASTER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!resp.ok) { addLog('Paymaster error ' + resp.status); return; }
+        try{
+            const body = { action:'register', player:playerPubkey.toBase58(), xHandle };
+            const resp = await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
             const data = await resp.json();
-            if (data.txSignature) {
+            if(data.txSignature){
                 addLog(`Registered ${xHandle} | Tx: ${data.txSignature}`);
                 registerBtn.disabled = true; walletInput.disabled = true; xInput.disabled = true;
                 resetGame();
                 requestAnimationFrame(gameLoop);
             } else addLog('No tx returned from paymaster');
-        } catch (err) { addLog('Register error: ' + (err.message || err)); }
+        } catch(err){ addLog('Register error: '+(err.message||err)); }
     });
 
-    resetBtn.addEventListener('click', () => { resetGame(); });
+    resetBtn.addEventListener('click',()=>{ resetGame(); });
 
     addLog('Ready. Enter X handle & wallet, then press Register. Use ← → to move, Space to shoot.');
-    fetchLeaderboard(); setInterval(fetchLeaderboard, 5000);
+    fetchLeaderboard(); setInterval(fetchLeaderboard,5000);
 
 })();
