@@ -16,12 +16,10 @@
     let score = 0, timeLeft = 60000, gameOver = true;
     let keysPressed = {}, enemySpawnTimer = 0, difficulty = 1;
 
-    const connection = new solanaWeb3.Connection("https://testnet.fogo.io", "confirmed");
-
     // --- Images ---
     const shipImg = new Image();
     shipImg.src = 'ship.png';
-    const enemyImgs = ['enemy1.png','enemy2.png','enemy3.png','enemy4.png','enemy5.png'].map(src => {
+    const enemyImgs = ['enemy1.png','enemy2.png','enemy3.png','enemy4.png','enemy5.png'].map(src=>{
         const img = new Image();
         img.src = src;
         return img;
@@ -44,8 +42,7 @@
         bullets = []; enemies = []; enemyBullets = []; particles = [];
         score = 0; timeLeft = 60000; gameOver = false;
         enemySpawnTimer = 0; difficulty = 1; keysPressed = {};
-        gameOverOverlay.classList.remove('visible'); window.lastTs = undefined;
-
+        gameOverOverlay.classList.remove('visible');
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`;
         addLog('Game reset.');
     }
@@ -71,15 +68,14 @@
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
         // Ship
-        if(shipImg.complete) ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
-        else { ctx.fillStyle='yellow'; ctx.fillRect(ship.x, ship.y, ship.width, ship.height); }
+        ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
 
         // Player bullets
         ctx.fillStyle='#ffde59';
         bullets.forEach(b => ctx.fillRect(b.x,b.y,b.width,b.height));
 
         // Enemies
-        enemies.forEach(e => { if(e.img && e.img.complete) ctx.drawImage(e.img,e.x,e.y,e.width,e.height); else { ctx.fillStyle='red'; ctx.fillRect(e.x,e.y,e.width,e.height); } });
+        enemies.forEach(e => ctx.drawImage(e.img,e.x,e.y,e.width,e.height));
 
         // Enemy bullets
         ctx.fillStyle='#ff6e6e';
@@ -158,7 +154,6 @@
     window.addEventListener('keydown', e=>{ keysPressed[e.code]=true; });
     window.addEventListener('keyup', e=>{ keysPressed[e.code]=false; });
 
-    // Space bắn → push bullet sau Paymaster trả tx
     window.addEventListener('keydown', async e=>{
         if(e.code!=='Space'||!playerPubkey||gameOver) return;
         const body={action:'shoot', player:playerPubkey.toBase58(), timestamp:Date.now(), shipX:ship.x};
@@ -224,6 +219,19 @@
     resetBtn.addEventListener('click', ()=>{ resetGame(); });
 
     addLog('Ready. Enter X handle & wallet, press Register. Use ← → to move, Space to shoot.');
+
+    // --- Chờ load ảnh xong mới bắt đầu ---
+    const allImgs = [shipImg, ...enemyImgs];
+    let loadedCount = 0;
+    allImgs.forEach(img => {
+        img.onload = () => {
+            loadedCount++;
+            if(loadedCount === allImgs.length){
+                resetGame();
+                requestAnimationFrame(gameLoop);
+            }
+        };
+    });
+
     fetchLeaderboard(); setInterval(fetchLeaderboard,5000);
-    requestAnimationFrame(gameLoop);
 })();
