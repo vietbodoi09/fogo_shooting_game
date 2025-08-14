@@ -19,7 +19,7 @@
         .map(src => { const img = new Image(); img.src = src; return img; });
 
     let playerPubkey = null, xHandle = null;
-    let ship = { x: canvas.width/2 - 25, y: canvas.height - 120, width: 50, height: 70, speed: 4 };
+    let ship = { x: canvas.width/2 - 25, y: canvas.height - 110, width: 70, height: 80, speed: 4 };
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
     let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {};
     let enemySpawnTimer = 0, difficulty = 1;
@@ -39,7 +39,7 @@
     }
 
     function resetGame(){
-        ship = { x: canvas.width/2-25, y: canvas.height-120, width: 50, height: 70, speed: 4 };
+        ship = { x: canvas.width/2-25, y: canvas.height-110, width: 70, height: 80, speed: 4 };
         bullets = []; enemies = []; enemyBullets = []; particles = [];
         score = 0; timeLeft = 60000; gameOver = false;
         enemySpawnTimer = 0; difficulty = 1;
