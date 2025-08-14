@@ -25,7 +25,7 @@
     function loadAssets() {
         return new Promise(resolve => {
             let loadedCount = 0;
-            const totalAssets = 1 + 5; // 1 ship + 5 enemies
+            const totalAssets = 1 + 5;
 
             const onAssetLoad = () => {
                 loadedCount++;
@@ -73,7 +73,10 @@
         difficulty = 1;
         keysPressed = {};
         gameOverOverlay.classList.remove('visible');
-        addLog('Game reset');
+        
+        window.lastTs = undefined;
+
+        addLog('Game reset.');
     }
 
     function spawnEnemy() {
@@ -147,29 +150,27 @@
                 enemySpawnTimer = 0;
             }
 
-            // Player movement
             if (keysPressed.ArrowLeft) { ship.x -= ship.speed; if (ship.x < 0) ship.x = 0; }
             if (keysPressed.ArrowRight) { ship.x += ship.speed; if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width; }
 
-            // Player bullets
             bullets.forEach((b, i) => {
                 b.y -= 8;
                 if (b.y < -b.height) {
                     bullets.splice(i, 1);
                     return;
                 }
-                enemies.forEach((e, j) => {
-                    if (isColliding(b, e)) {
-                        bullets.splice(i, 1);
+                for (let j = 0; j < enemies.length; j++) {
+                    if (isColliding(b, enemies[j])) {
+                        spawnParticles(enemies[j].x + enemies[j].width / 2, enemies[j].y + enemies[j].height / 2, 'yellow');
+                        enemyBullets = enemyBullets.filter(eb => !(eb.x > enemies[j].x && eb.x < enemies[j].x + enemies[j].width && eb.y > enemies[j].y && eb.y < enemies[j].y + enemies[j].height));
                         enemies.splice(j, 1);
+                        bullets.splice(i, 1);
                         score++;
-                        spawnParticles(e.x + e.width / 2, e.y + e.height / 2, 'yellow');
-                        enemyBullets = enemyBullets.filter(eb => !(eb.x > e.x && eb.x < e.x + e.width && eb.y > e.y && eb.y < e.y + e.height));
+                        break;
                     }
-                });
+                }
             });
 
-            // Enemy bullets
             enemyBullets.forEach((b, i) => {
                 b.y += b.speed;
                 if (b.y > canvas.height + b.height) {
@@ -183,13 +184,13 @@
                 }
             });
 
-            // Enemies
             enemies.forEach((e, i) => {
                 e.y += e.speed;
                 e.x += e.direction * 1.5;
                 if (e.x < 0 || e.x + e.width > canvas.width) e.direction *= -1;
                 if (e.y > canvas.height) {
-                    enemies.splice(i, 1); // Remove enemy if it goes off-screen
+                    enemies.splice(i, 1);
+                    return;
                 }
 
                 e.shootTimer += delta;
@@ -206,7 +207,6 @@
                 }
             });
 
-            // Particles
             particles.forEach((p, i) => {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -224,7 +224,6 @@
         requestAnimationFrame(gameLoop);
     }
 
-    // Key handlers
     window.addEventListener('keydown', e => { keysPressed[e.code] = true; });
     window.addEventListener('keyup', e => { keysPressed[e.code] = false; });
 
@@ -240,11 +239,11 @@
                 addLog(`Tx: ${data.txSignature}`);
                 bullets.push({ x: ship.x + ship.width / 2 - 2.5, y: ship.y - 10, width: 5, height: 10 });
             }
-        } catch (err) { addLog('Tx error: ' + (err.message || err)); }
+        } catch (err) { addLog('Shoot error: ' + (err.message || err)); }
     });
 
     async function sendTx(action, value = null) {
-        if (!playerPubkey) { addLog('Register first'); return; }
+        if (!playerPubkey) { addLog('Please register first.'); return; }
         try {
             const body = { action, player: playerPubkey.toBase58() };
             if (action === 'register' && xHandle) body.xHandle = xHandle;
@@ -253,7 +252,7 @@
             if (!resp.ok) { addLog('Paymaster error ' + resp.status); return; }
             const data = await resp.json();
             if (data.txSignature) addLog(`Tx: ${data.txSignature}`);
-        } catch (e) { addLog('Tx error: ' + (e.message || e)); }
+        } catch (e) { addLog('Transaction error: ' + (e.message || e)); }
     }
 
     async function fetchLeaderboard() {
@@ -273,12 +272,12 @@
     registerBtn.addEventListener('click', async () => {
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
-        if (!walletAddr || !xHandleVal) { addLog('Enter X handle and wallet'); return; }
+        if (!walletAddr || !xHandleVal) { addLog('Please enter X handle and wallet address.'); return; }
 
         let pubkey;
         try {
             pubkey = new solanaWeb3.PublicKey(walletAddr);
-        } catch (e) { addLog('Invalid wallet address'); return; }
+        } catch (e) { addLog('Invalid wallet address.'); return; }
 
         playerPubkey = pubkey;
         xHandle = xHandleVal;
@@ -300,8 +299,8 @@
 
                 resetGame();
                 requestAnimationFrame(gameLoop);
-            } else { addLog('No tx returned from paymaster'); }
-        } catch (err) { addLog('Register error: ' + (err.message || err)); }
+            } else { addLog('No transaction returned from paymaster.'); }
+        } catch (err) { addLog('Registration error: ' + (err.message || err)); }
     });
 
     resetBtn.addEventListener('click', () => {
@@ -309,7 +308,6 @@
         requestAnimationFrame(gameLoop);
     });
 
-    // Initialize game
     addLog('Loading game assets...');
     await loadAssets();
     addLog('Ready. Enter X handle & wallet, then press Register. Use ← → to move, Space to shoot.');
