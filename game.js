@@ -14,7 +14,13 @@
     shipImg.src = 'ship.png';
 
     let playerPubkey = null, xHandle = null;
-    let ship = { x: canvas.width/2-25, y: canvas.height-60, width: 170, height: 150, speed: 4 };
+    let ship = {
+    x: canvas.width/2 - 25,
+    y: canvas.height - 60,
+    width: 170,  // chỉnh ở đây
+    height: 200, // chỉnh ở đây
+    speed: 4
+    };
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
     let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {};
     let enemySpawnTimer = 0, difficulty = 1;
@@ -34,7 +40,7 @@
     }
 
     function resetGame() {
-        ship = { x: canvas.width/2-25, y: canvas.height-60, width: 50, height: 20, speed: 4 };
+        ship = { x: canvas.width/2-25, y: canvas.height-60, width: 170, height: 200, speed: 4 };
         bullets = []; enemies = []; enemyBullets = []; particles = [];
         score = 0; timeLeft = 60000; gameOver = false;
         enemySpawnTimer = 0; difficulty = 1;
@@ -74,7 +80,9 @@
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
         // Ship
+        if(shipImg.complete) { // đảm bảo ảnh load xong
         ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
+        }
 
         // Player bullets
         ctx.fillStyle = '#ffde59'; 
