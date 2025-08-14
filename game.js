@@ -16,7 +16,7 @@
     let playerPubkey = null, xHandle = null;
     let ship = {
     x: canvas.width/2 - 25,
-    y: canvas.height - 60,
+    y: canvas.height - 120,
     width: 170,  // chỉnh ở đây
     height: 200, // chỉnh ở đây
     speed: 4
@@ -40,7 +40,7 @@
     }
 
     function resetGame() {
-        ship = { x: canvas.width/2-25, y: canvas.height-60, width: 170, height: 200, speed: 4 };
+        ship = { x: canvas.width/2-25, y: canvas.height-120, width: 170, height: 200, speed: 4 };
         bullets = []; enemies = []; enemyBullets = []; particles = [];
         score = 0; timeLeft = 60000; gameOver = false;
         enemySpawnTimer = 0; difficulty = 1;
