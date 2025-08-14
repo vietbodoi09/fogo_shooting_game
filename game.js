@@ -161,7 +161,7 @@
             e.shootTimer += delta;
             if (e.shootTimer > e.shootInterval) {
                 e.shootTimer = 0;
-                enemyBullets.push({ x: e.x + e.width / 2 - 3, y: e.y + e.height, width: 6, height: 12, speed: 2 + Math.random() * 2 });
+                enemyBullets.push({ x: e.x + e.width / 2 - 3, y: e.y + e.height, width: 10, height: 16, speed: 2 + Math.random() * 2 });
             }
 
             if (isColliding(ship, e)) { gameOver = true; gameOverOverlay.classList.add('visible'); sendTx('score', score); break; }
