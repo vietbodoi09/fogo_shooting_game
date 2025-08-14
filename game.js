@@ -14,7 +14,6 @@
     const shipImg = new Image();
     shipImg.src = 'ship.png';
 
-    // --- Load 5 enemy images ---
     const enemyImgs = ['enemy1.png','enemy2.png','enemy3.png','enemy4.png','enemy5.png']
         .map(src => { const img = new Image(); img.src = src; return img; });
 
@@ -81,24 +80,19 @@
         ctx.fillStyle = '#02111a';
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
-        // Ship
         if(shipImg.complete) ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
 
-        // Player bullets
         ctx.fillStyle = '#ffde59';
         bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.width,b.height));
 
-        // Enemies
         enemies.forEach(e=>{
             if(e.img && e.img.complete) ctx.drawImage(e.img, e.x, e.y, e.width, e.height);
             else { ctx.fillStyle='#d32f2f'; ctx.fillRect(e.x,e.y,e.width,e.height); }
         });
 
-        // Enemy bullets
         ctx.fillStyle = '#ff6e6e';
         enemyBullets.forEach(b=>ctx.fillRect(b.x,b.y,b.width,b.height));
 
-        // Particles
         particles.forEach(p=>{
             ctx.fillStyle = p.color;
             ctx.beginPath();
@@ -108,21 +102,28 @@
     }
 
     function update(delta){
+        // Nếu game đang chơi mới giảm timeLeft
         if(!gameOver) timeLeft -= delta;
-        if(timeLeft<=0 && !gameOver){
+
+        if(!gameOver && timeLeft <= 0){
             gameOver = true;
             gameOverOverlay.classList.add('visible');
-            sendTx('score',score);
+            sendTx('score', score);
         }
 
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`;
         difficulty = 1 + (60000 - timeLeft)/60000;
 
-        // Spawn enemies regardless gameOver=false
-        enemySpawnTimer += delta;
-        if(enemySpawnTimer > 1200/difficulty){ spawnEnemy(); enemySpawnTimer=0; }
+        // Spawn enemies **chỉ khi game chưa over**
+        if(!gameOver){
+            enemySpawnTimer += delta;
+            if(enemySpawnTimer > 1200/difficulty){ 
+                spawnEnemy(); 
+                enemySpawnTimer = 0; 
+            }
+        }
 
-        if(gameOver) return; // skip movement and collisions
+        if(gameOver) return; // Skip all updates khi gameOver
 
         // Player bullets
         bullets.forEach((b,i)=>{
@@ -185,7 +186,7 @@
         window.lastTs = ts;
         update(delta);
         draw();
-        requestAnimationFrame(gameLoop); // chạy liên tục
+        requestAnimationFrame(gameLoop); // Chạy liên tục 1 loop duy nhất
     }
 
     // Key handlers
@@ -263,14 +264,10 @@
                 registerBtn.disabled = true;
                 walletInput.disabled = true;
                 xInput.disabled = true;
-    
-                // Reset và bắt đầu game loop
-                resetGame();
-                requestAnimationFrame(gameLoop); 
+                resetGame(); // Start game ngay sau khi register
             } else { addLog('No tx returned from paymaster'); }
         } catch(err){ addLog('Register error: '+(err.message||err)); }
     });
-
 
     resetBtn.addEventListener('click',()=>{ resetGame(); });
 
@@ -278,6 +275,6 @@
     fetchLeaderboard();
     setInterval(fetchLeaderboard,5000);
 
-    // Start the continuous game loop
+    // Start game loop **chỉ 1 lần duy nhất**
     requestAnimationFrame(gameLoop);
 })();
