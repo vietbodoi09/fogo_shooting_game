@@ -135,8 +135,12 @@
                 const e = enemies[j];
                 if (isColliding(b, e)) {
                     spawnParticles(e.x + e.width / 2, e.y + e.height / 2, 'yellow');
-                    enemies.splice(j, 1);
-                    bullets.splice(i, 1);
+                    
+                    // Xóa tất cả đạn do enemy này bắn ra
+                    enemyBullets = enemyBullets.filter(eb => !(eb.y >= e.y && eb.y <= e.y + e.height && eb.x >= e.x && eb.x <= e.x + e.width));
+        
+                    enemies.splice(j, 1);  // Xóa enemy
+                    bullets.splice(i, 1);  // Xóa đạn player
                     score++;
                     break;
                 }
