@@ -10,6 +10,8 @@
     const resetBtn = document.getElementById('resetBtn');
     const leaderboardList = document.getElementById('leaderboardList');
     const gameOverOverlay = document.getElementById('gameOverOverlay');
+    const shipImg = new Image();
+    shipImg.src = 'ship.png';
 
     let playerPubkey = null, xHandle = null;
     let ship = { x: canvas.width/2-25, y: canvas.height-60, width: 50, height: 20, speed: 4 };
@@ -72,8 +74,7 @@
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
         // Ship
-        ctx.fillStyle = '#4caf50'; 
-        ctx.fillRect(ship.x, ship.y, ship.width, ship.height); 
+        ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
 
         // Player bullets
         ctx.fillStyle = '#ffde59'; 
