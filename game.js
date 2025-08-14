@@ -1,6 +1,6 @@
 (async () => {
-    const PAYMASTER_URL = "https://fogoshooting.shop:3000/sponsor"; 
-    const canvas = document.getElementById('game'); 
+    const PAYMASTER_URL = "https://fogoshooting.shop:3000/sponsor";
+    const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const scoreTimerEl = document.getElementById('scoreTimer');
     const logBox = document.getElementById('logBox');
@@ -11,171 +11,212 @@
     const leaderboardList = document.getElementById('leaderboardList');
     const gameOverOverlay = document.getElementById('gameOverOverlay');
 
-    const shipImg = new Image();
-    shipImg.src = 'ship.png';
-
-    const enemyImgs = ['enemy1.png','enemy2.png','enemy3.png','enemy4.png','enemy5.png']
-        .map(src => { const img = new Image(); img.src = src; return img; });
-
     let playerPubkey = null, xHandle = null;
-    let ship = { x: canvas.width/2 - 25, y: canvas.height - 110, width: 70, height: 80, speed: 4 };
-    let bullets = [], enemies = [], enemyBullets = [], particles = [];
-    let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {};
-    let enemySpawnTimer = 0, difficulty = 1;
+    let ship, bullets, enemies, enemyBullets, particles;
+    let score, timeLeft, gameOver, keysPressed, enemySpawnTimer, difficulty;
 
-    function addLog(msg){
-        const div = document.createElement('div'); 
-        div.className = 'logEntry'; 
-        div.textContent = msg; 
-        logBox.prepend(div); 
-        if(logBox.childElementCount > 15) logBox.removeChild(logBox.lastChild); 
+    const connection = new solanaWeb3.Connection("https://testnet.fogo.io", "confirmed");
+
+    const assets = {
+        shipImg: new Image(),
+        enemyImgs: []
+    };
+
+    function loadAssets() {
+        return new Promise(resolve => {
+            let loadedCount = 0;
+            const totalAssets = 1 + 5; // 1 ship + 5 enemies
+
+            const onAssetLoad = () => {
+                loadedCount++;
+                if (loadedCount === totalAssets) {
+                    addLog('All assets loaded.');
+                    resolve();
+                }
+            };
+
+            assets.shipImg.onload = onAssetLoad;
+            assets.shipImg.src = 'ship.png';
+
+            const enemySrcs = ['enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'enemy5.png'];
+            enemySrcs.forEach(src => {
+                const img = new Image();
+                img.onload = onAssetLoad;
+                img.src = src;
+                assets.enemyImgs.push(img);
+            });
+        });
     }
 
-    function isColliding(a,b){
+    function addLog(msg) {
+        const div = document.createElement('div');
+        div.className = 'logEntry';
+        div.textContent = msg;
+        logBox.prepend(div);
+        if (logBox.childElementCount > 15) logBox.removeChild(logBox.lastChild);
+    }
+
+    function isColliding(a, b) {
         return (a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y);
     }
 
-    function resetGame(){
-        ship = { x: canvas.width/2-25, y: canvas.height-110, width: 70, height: 80, speed: 4 };
-        bullets = []; enemies = []; enemyBullets = []; particles = [];
-        score = 0; timeLeft = 60000; gameOver = false;
-        enemySpawnTimer = 0; difficulty = 1;
+    function resetGame() {
+        ship = { x: canvas.width / 2 - 25, y: canvas.height - 110, width: 70, height: 80, speed: 4 };
+        bullets = [];
+        enemies = [];
+        enemyBullets = [];
+        particles = [];
+        score = 0;
+        timeLeft = 60000;
+        gameOver = false;
+        enemySpawnTimer = 0;
+        difficulty = 1;
+        keysPressed = {};
         gameOverOverlay.classList.remove('visible');
         addLog('Game reset');
     }
 
-    function spawnEnemy(){
+    function spawnEnemy() {
         const size = 40;
-        const x = Math.random() * (canvas.width - size); 
-        const speed = 1 + Math.random()*difficulty;
-        const img = enemyImgs[Math.floor(Math.random()*enemyImgs.length)];
+        const x = Math.random() * (canvas.width - size);
+        const speed = 1 + Math.random() * difficulty;
+        const img = assets.enemyImgs[Math.floor(Math.random() * assets.enemyImgs.length)];
 
         enemies.push({
             x, y: -size, width: size, height: size, speed,
             shootTimer: 0,
-            shootInterval: 1500 + Math.random()*1000/difficulty,
-            direction: Math.random()<0.5 ? 1 : -1,
+            shootInterval: 1500 + Math.random() * 1000 / difficulty,
+            direction: Math.random() < 0.5 ? 1 : -1,
             img
         });
     }
 
-    function spawnParticles(x,y,color){
-        const count = 10 + Math.floor(Math.random()*5);
-        for(let i=0;i<count;i++){
+    function spawnParticles(x, y, color) {
+        const count = 10 + Math.floor(Math.random() * 5);
+        for (let i = 0; i < count; i++) {
             particles.push({
                 x, y,
-                vx: (Math.random()-0.5)*4,
-                vy: (Math.random()-0.5)*4,
-                radius: 2 + Math.random()*2,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                radius: 2 + Math.random() * 2,
                 color,
-                life: 20 + Math.random()*10
+                life: 20 + Math.random() * 10
             });
         }
     }
 
-    function draw(){
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#02111a';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        if(shipImg.complete) ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
+        ctx.drawImage(assets.shipImg, ship.x, ship.y, ship.width, ship.height);
 
         ctx.fillStyle = '#ffde59';
-        bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.width,b.height));
+        bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-        enemies.forEach(e=>{
-            if(e.img && e.img.complete) ctx.drawImage(e.img, e.x, e.y, e.width, e.height);
-            else { ctx.fillStyle='#d32f2f'; ctx.fillRect(e.x,e.y,e.width,e.height); }
+        enemies.forEach(e => {
+            ctx.drawImage(e.img, e.x, e.y, e.width, e.height);
         });
 
         ctx.fillStyle = '#ff6e6e';
-        enemyBullets.forEach(b=>ctx.fillRect(b.x,b.y,b.width,b.height));
+        enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-        particles.forEach(p=>{
+        particles.forEach(p => {
             ctx.fillStyle = p.color;
             ctx.beginPath();
-            ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             ctx.fill();
         });
     }
 
-    function update(delta){
-        if(!gameOver){
+    function update(delta) {
+        if (!gameOver) {
             timeLeft -= delta;
+            if (timeLeft <= 0) {
+                gameOver = true;
+                gameOverOverlay.classList.add('visible');
+                sendTx('score', score);
+            }
+            scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft / 1000)}`;
+            difficulty = 1 + (60000 - timeLeft) / 60000;
+
             enemySpawnTimer += delta;
+            if (enemySpawnTimer > 1200 / difficulty) {
+                spawnEnemy();
+                enemySpawnTimer = 0;
+            }
 
-            // spawn enemy
-            if(enemySpawnTimer > 1200/difficulty){ spawnEnemy(); enemySpawnTimer=0; }
+            // Player movement
+            if (keysPressed.ArrowLeft) { ship.x -= ship.speed; if (ship.x < 0) ship.x = 0; }
+            if (keysPressed.ArrowRight) { ship.x += ship.speed; if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width; }
 
-            // player bullets
-            bullets.forEach((b,i)=>{
+            // Player bullets
+            bullets.forEach((b, i) => {
                 b.y -= 8;
-                if(b.y < -b.height) bullets.splice(i,1);
-                enemies.forEach((e,j)=>{
-                    if(isColliding(b,e)){
-                        bullets.splice(i,1); enemies.splice(j,1);
+                if (b.y < -b.height) {
+                    bullets.splice(i, 1);
+                    return;
+                }
+                enemies.forEach((e, j) => {
+                    if (isColliding(b, e)) {
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
                         score++;
-                        spawnParticles(e.x+e.width/2, e.y+e.height/2,'yellow');
-                        enemyBullets = enemyBullets.filter(eb=>!(eb.x>e.x && eb.x<e.x+e.width && eb.y>e.y && eb.y<e.y+e.height));
+                        spawnParticles(e.x + e.width / 2, e.y + e.height / 2, 'yellow');
+                        enemyBullets = enemyBullets.filter(eb => !(eb.x > e.x && eb.x < e.x + e.width && eb.y > e.y && eb.y < e.y + e.height));
                     }
                 });
             });
 
-            // enemy bullets
-            enemyBullets.forEach((b,i)=>{
+            // Enemy bullets
+            enemyBullets.forEach((b, i) => {
                 b.y += b.speed;
-                if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
-                if(isColliding(b,ship)){
-                    gameOver=true;
+                if (b.y > canvas.height + b.height) {
+                    enemyBullets.splice(i, 1);
+                    return;
+                }
+                if (isColliding(b, ship)) {
+                    gameOver = true;
                     gameOverOverlay.classList.add('visible');
-                    sendTx('score',score);
+                    sendTx('score', score);
                 }
             });
 
-            // enemies
-            enemies.forEach(e=>{
+            // Enemies
+            enemies.forEach((e, i) => {
                 e.y += e.speed;
-                e.x += e.direction*1.5;
-                if(e.x<0 || e.x+e.width>canvas.width) e.direction*=-1;
+                e.x += e.direction * 1.5;
+                if (e.x < 0 || e.x + e.width > canvas.width) e.direction *= -1;
+                if (e.y > canvas.height) {
+                    enemies.splice(i, 1); // Remove enemy if it goes off-screen
+                }
 
                 e.shootTimer += delta;
-                if(e.shootTimer>e.shootInterval){
-                    e.shootTimer=0;
-                    const bulletSpeed = 2 + Math.random()*2;
-                    enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed });
+                if (e.shootTimer > e.shootInterval) {
+                    e.shootTimer = 0;
+                    const bulletSpeed = 2 + Math.random() * 2;
+                    enemyBullets.push({ x: e.x + e.width / 2 - 3, y: e.y + e.height, width: 6, height: 12, speed: bulletSpeed });
                 }
 
-                if(isColliding(ship,e)){
-                    gameOver=true;
+                if (isColliding(ship, e)) {
+                    gameOver = true;
                     gameOverOverlay.classList.add('visible');
-                    sendTx('score',score);
+                    sendTx('score', score);
                 }
             });
 
-            // particles
-            particles.forEach((p,i)=>{
-                p.x += p.vx; p.y += p.vy; p.life--;
-                if(p.life<=0) particles.splice(i,1);
+            // Particles
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
             });
-
-            // player movement
-            if(keysPressed.ArrowLeft){ ship.x -= ship.speed; if(ship.x<0) ship.x=0; }
-            if(keysPressed.ArrowRight){ ship.x += ship.speed; if(ship.x+ship.width>canvas.width) ship.x=canvas.width-ship.width; }
-
-            // check timeLeft
-            if(timeLeft <= 0){
-                gameOver = true;
-                gameOverOverlay.classList.add('visible');
-                sendTx('score',score);
-            }
-
-            difficulty = 1 + (60000 - timeLeft)/60000;
         }
-
-        scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(Math.max(timeLeft,0)/1000)}`;
     }
 
-    function gameLoop(ts){
+    function gameLoop(ts) {
         const delta = ts - (window.lastTs || ts);
         window.lastTs = ts;
         update(delta);
@@ -183,90 +224,95 @@
         requestAnimationFrame(gameLoop);
     }
 
-    window.addEventListener('keydown', e => { keysPressed[e.code]=true; });
-    window.addEventListener('keyup', e => { keysPressed[e.code]=false; });
+    // Key handlers
+    window.addEventListener('keydown', e => { keysPressed[e.code] = true; });
+    window.addEventListener('keyup', e => { keysPressed[e.code] = false; });
 
     window.addEventListener('keydown', async e => {
-        if(e.code!=='Space') return;
-        if(!playerPubkey){ addLog('Register first'); return; }
+        if (e.code !== 'Space' || !playerPubkey || gameOver) return;
 
-        const body = { action:'shoot', player:playerPubkey.toBase58(), timestamp:Date.now(), shipX:ship.x };
-        try{
-            const resp = await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
+        const body = { action: 'shoot', player: playerPubkey.toBase58(), timestamp: Date.now(), shipX: ship.x };
+        try {
+            const resp = await fetch(PAYMASTER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!resp.ok) { addLog('Paymaster error ' + resp.status); return; }
             const data = await resp.json();
-            if(data.txSignature){
+            if (data.txSignature) {
                 addLog(`Tx: ${data.txSignature}`);
-                bullets.push({ x: ship.x + ship.width/2 - 2.5, y: ship.y - 10, width:5, height:10 });
+                bullets.push({ x: ship.x + ship.width / 2 - 2.5, y: ship.y - 10, width: 5, height: 10 });
             }
-        } catch(err){ addLog('Tx error: '+(err.message||err)); }
+        } catch (err) { addLog('Tx error: ' + (err.message || err)); }
     });
 
-    async function sendTx(action,value=null){
-        if(!playerPubkey){ addLog('Register first'); return; }
-        try{
-            const body={ action, player:playerPubkey.toBase58() };
-            if(action==='register' && xHandle) body.xHandle=xHandle;
-            if(action==='score') body.score=value;
-            const resp=await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
-            const data=await resp.json();
-            if(data.txSignature) addLog(`Tx: ${data.txSignature}`);
-        } catch(e){ addLog('Tx error: '+(e.message||e)); }
+    async function sendTx(action, value = null) {
+        if (!playerPubkey) { addLog('Register first'); return; }
+        try {
+            const body = { action, player: playerPubkey.toBase58() };
+            if (action === 'register' && xHandle) body.xHandle = xHandle;
+            if (action === 'score') body.score = value;
+            const resp = await fetch(PAYMASTER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!resp.ok) { addLog('Paymaster error ' + resp.status); return; }
+            const data = await resp.json();
+            if (data.txSignature) addLog(`Tx: ${data.txSignature}`);
+        } catch (e) { addLog('Tx error: ' + (e.message || e)); }
     }
 
-    async function fetchLeaderboard(){
-        try{
-            const resp = await fetch(PAYMASTER_URL+'/leaderboard');
-            if(!resp.ok){ addLog('Leaderboard fetch error'); return; }
+    async function fetchLeaderboard() {
+        try {
+            const resp = await fetch(PAYMASTER_URL + '/leaderboard');
+            if (!resp.ok) { addLog('Leaderboard fetch error'); return; }
             const data = await resp.json();
-            leaderboardList.innerHTML='';
-            data.forEach(p=>{
-                const li=document.createElement('li');
-                li.innerHTML=`<span>${p.xHandle||p.player.slice(0,4)+'...'}</span><span>${p.score}</span>`;
+            leaderboardList.innerHTML = '';
+            data.forEach(p => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${p.xHandle || p.player.slice(0, 4) + '...'}</span><span>${p.score}</span>`;
                 leaderboardList.appendChild(li);
             });
-        } catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
+        } catch (e) { addLog('Leaderboard error: ' + (e.message || e)); }
     }
 
-    registerBtn.addEventListener('click', async ()=>{
+    registerBtn.addEventListener('click', async () => {
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
-        if(!walletAddr || !xHandleVal){ addLog('Enter X handle and wallet'); return; }
+        if (!walletAddr || !xHandleVal) { addLog('Enter X handle and wallet'); return; }
 
         let pubkey;
-        try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } 
-        catch(e){ addLog('Invalid wallet address'); return; }
+        try {
+            pubkey = new solanaWeb3.PublicKey(walletAddr);
+        } catch (e) { addLog('Invalid wallet address'); return; }
 
-        playerPubkey = pubkey; 
+        playerPubkey = pubkey;
         xHandle = xHandleVal;
 
-        try{
-            const body = { action:'register', player:playerPubkey.toBase58(), xHandle };
+        try {
+            const body = { action: 'register', player: playerPubkey.toBase58(), xHandle };
             const resp = await fetch(PAYMASTER_URL, {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
-            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
+            if (!resp.ok) { addLog('Paymaster error ' + resp.status); return; }
             const data = await resp.json();
-            if(data.txSignature){
+            if (data.txSignature) {
                 addLog(`Registered ${xHandle} (${playerPubkey.toBase58()}) | Tx: ${data.txSignature}`);
                 registerBtn.disabled = true;
                 walletInput.disabled = true;
                 xInput.disabled = true;
 
-                resetGame(); // start game
+                resetGame();
+                requestAnimationFrame(gameLoop);
             } else { addLog('No tx returned from paymaster'); }
-        } catch(err){ addLog('Register error: '+(err.message||err)); }
+        } catch (err) { addLog('Register error: ' + (err.message || err)); }
     });
 
-    resetBtn.addEventListener('click',()=>{ resetGame(); });
+    resetBtn.addEventListener('click', () => {
+        resetGame();
+        requestAnimationFrame(gameLoop);
+    });
 
+    // Initialize game
+    addLog('Loading game assets...');
+    await loadAssets();
     addLog('Ready. Enter X handle & wallet, then press Register. Use ← → to move, Space to shoot.');
     fetchLeaderboard();
-    setInterval(fetchLeaderboard,5000);
-
-    // Start game loop 1 lần duy nhất
-    requestAnimationFrame(gameLoop);
+    setInterval(fetchLeaderboard, 5000);
 })();
