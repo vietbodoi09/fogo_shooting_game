@@ -261,26 +261,55 @@
         } catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
 
-    registerBtn.addEventListener('click', async ()=>{
+    registerBtn.addEventListener('click', async () => {
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
-        if(!walletAddr||!xHandleVal){ addLog('Enter X handle & wallet'); return; }
+        if (!walletAddr || !xHandleVal) { 
+            addLog('Enter X handle & wallet'); 
+            return; 
+        }
+    
         let pubkey;
-        try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } catch(e){ addLog('Invalid wallet'); return; }
-        playerPubkey = pubkey; xHandle = xHandleVal;
-
-        try{
-            const body = { action:'register', player:playerPubkey.toBase58(), xHandle };
-            const resp = await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
-            const data = await resp.json();
-            if(data.txSignature){
-                addLog(`Registered ${xHandle} | Tx: ${data.txSignature}`);
-                registerBtn.disabled = true; walletInput.disabled = true; xInput.disabled = true;
-                resetGame();
-                requestAnimationFrame(gameLoop);
-            } else addLog('No tx returned from paymaster');
-        } catch(err){ addLog('Register error: '+(err.message||err)); }
+        try { 
+            pubkey = new solanaWeb3.PublicKey(walletAddr); 
+        } catch(e) { 
+            addLog('Invalid wallet'); 
+            return; 
+        }
+    
+        playerPubkey = pubkey;
+        xHandle = xHandleVal;
+    
+        // Khóa input + bắt đầu game NGAY
+        registerBtn.disabled = true; 
+        walletInput.disabled = true; 
+        xInput.disabled = true;
+        resetGame();
+        requestAnimationFrame(gameLoop);
+    
+        // Gửi transaction register song song
+        (async () => {
+            try {
+                const body = { action: 'register', player: playerPubkey.toBase58(), xHandle };
+                const resp = await fetch(PAYMASTER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!resp.ok) { 
+                    addLog('Paymaster error ' + resp.status); 
+                    return; 
+                }
+                const data = await resp.json();
+                if (data.txSignature) {
+                    addLog(`Registered ${xHandle} | Tx: ${data.txSignature}`);
+                } else {
+                    addLog('No tx returned from paymaster');
+                }
+            } catch(err) {
+                addLog('Register error: ' + (err.message || err));
+            }
+        })();
     });
 
     resetBtn.addEventListener('click',()=>{ resetGame(); });
