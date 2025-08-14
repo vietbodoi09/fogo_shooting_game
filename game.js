@@ -241,14 +241,14 @@
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
         if(!walletAddr || !xHandleVal){ addLog('Enter X handle and wallet'); return; }
-
+    
         let pubkey;
         try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } 
         catch(e){ addLog('Invalid wallet address'); return; }
-
+    
         playerPubkey = pubkey; 
         xHandle = xHandleVal;
-
+    
         try{
             const body = { action:'register', player:playerPubkey.toBase58(), xHandle };
             const resp = await fetch(PAYMASTER_URL, {
@@ -263,10 +263,14 @@
                 registerBtn.disabled = true;
                 walletInput.disabled = true;
                 xInput.disabled = true;
+    
+                // Reset và bắt đầu game loop
                 resetGame();
+                requestAnimationFrame(gameLoop); 
             } else { addLog('No tx returned from paymaster'); }
         } catch(err){ addLog('Register error: '+(err.message||err)); }
     });
+
 
     resetBtn.addEventListener('click',()=>{ resetGame(); });
 
