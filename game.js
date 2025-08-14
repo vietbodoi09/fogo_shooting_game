@@ -16,7 +16,7 @@
 
     // --- Load 5 enemy images ---
     const enemyImgs = ['enemy1.png','enemy2.png','enemy3.png','enemy4.png','enemy5.png']
-        .map(src => { const img=new Image(); img.src=src; return img; });
+        .map(src => { const img = new Image(); img.src = src; return img; });
 
     let playerPubkey = null, xHandle = null;
     let ship = { x: canvas.width/2 - 25, y: canvas.height - 120, width: 50, height: 70, speed: 4 };
@@ -108,21 +108,21 @@
     }
 
     function update(delta){
-        if(gameOver) return;
-
-        timeLeft -= delta;
-        if(timeLeft<=0){
+        if(!gameOver) timeLeft -= delta;
+        if(timeLeft<=0 && !gameOver){
             gameOver = true;
             gameOverOverlay.classList.add('visible');
             sendTx('score',score);
-            return;
         }
+
         scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`;
         difficulty = 1 + (60000 - timeLeft)/60000;
 
-        // Spawn enemies
+        // Spawn enemies regardless gameOver=false
         enemySpawnTimer += delta;
         if(enemySpawnTimer > 1200/difficulty){ spawnEnemy(); enemySpawnTimer=0; }
+
+        if(gameOver) return; // skip movement and collisions
 
         // Player bullets
         bullets.forEach((b,i)=>{
@@ -181,13 +181,14 @@
     }
 
     function gameLoop(ts){
-        const delta = ts - (window.lastTs||ts);
+        const delta = ts - (window.lastTs || ts);
         window.lastTs = ts;
         update(delta);
         draw();
-        if(!gameOver) requestAnimationFrame(gameLoop);
+        requestAnimationFrame(gameLoop); // chạy liên tục
     }
 
+    // Key handlers
     window.addEventListener('keydown', e => { keysPressed[e.code]=true; });
     window.addEventListener('keyup', e => { keysPressed[e.code]=false; });
 
@@ -235,19 +236,19 @@
         } catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
 
+    // Register
     registerBtn.addEventListener('click', async ()=>{
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
         if(!walletAddr || !xHandleVal){ addLog('Enter X handle and wallet'); return; }
-    
+
         let pubkey;
         try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } 
         catch(e){ addLog('Invalid wallet address'); return; }
-    
+
         playerPubkey = pubkey; 
         xHandle = xHandleVal;
-    
-        // Gửi register tới paymaster
+
         try{
             const body = { action:'register', player:playerPubkey.toBase58(), xHandle };
             const resp = await fetch(PAYMASTER_URL, {
@@ -255,30 +256,24 @@
                 headers:{'Content-Type':'application/json'},
                 body: JSON.stringify(body)
             });
-    
             if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
-    
             const data = await resp.json();
             if(data.txSignature){
                 addLog(`Registered ${xHandle} (${playerPubkey.toBase58()}) | Tx: ${data.txSignature}`);
-    
-                // --- Start game ngay khi nhận txSignature ---
                 registerBtn.disabled = true;
                 walletInput.disabled = true;
                 xInput.disabled = true;
                 resetGame();
-                requestAnimationFrame(gameLoop);
-            } else {
-                addLog('No tx returned from paymaster');
-            }
-    
-        } catch(err){ addLog('Register error: ' + (err.message||err)); }
+            } else { addLog('No tx returned from paymaster'); }
+        } catch(err){ addLog('Register error: '+(err.message||err)); }
     });
 
-
-    resetBtn.addEventListener('click',()=>{ resetGame(); requestAnimationFrame(gameLoop); });
+    resetBtn.addEventListener('click',()=>{ resetGame(); });
 
     addLog('Ready. Enter X handle & wallet, then press Register. Use ← → to move, Space to shoot.');
     fetchLeaderboard();
     setInterval(fetchLeaderboard,5000);
+
+    // Start the continuous game loop
+    requestAnimationFrame(gameLoop);
 })();
