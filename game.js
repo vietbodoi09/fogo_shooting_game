@@ -66,12 +66,8 @@
         const x = Math.random() * (canvas.width - size);
         const speed = 1 + Math.random() * difficulty;
         enemies.push({
-            x,
-            y: -size,
-            width: size,
-            height: size,
-            speed,
-            shootTimer: 0,
+            x, y: -size, width: size, height: size,
+            speed, shootTimer: 0,
             shootInterval: 1500 + Math.random() * 1000 / difficulty,
             direction: Math.random() < 0.5 ? 1 : -1,
             img: enemyImg
@@ -124,7 +120,7 @@
         timeLeft -= delta;
         enemySpawnTimer += delta;
 
-        if (enemySpawnTimer > 2000 / difficulty) { spawnEnemy(); enemySpawnTimer = 0; }
+        if (enemySpawnTimer > 1200 / difficulty) { spawnEnemy(); enemySpawnTimer = 0; }
 
         // Player movement
         if (keysPressed.ArrowLeft) { ship.x -= ship.speed; if (ship.x < 0) ship.x = 0; }
@@ -198,21 +194,25 @@
         if (!playerPubkey) { addLog('Register first'); return; }
         if (pendingTxCount >= MAX_PENDING_TX) { addLog('Wait for pending transaction(s) to process.'); return; }
 
-        // spawn bullet immediately
         bullets.push({ x: ship.x + ship.width / 2 - 2.5, y: ship.y - 10, width: 5, height: 10 });
 
-        // send tx
         pendingTxCount++;
         updatePendingDisplay();
         const body = { action: 'shoot', player: playerPubkey.toBase58(), timestamp: Date.now(), shipX: ship.x };
+
         try {
             const resp = await fetch(PAYMASTER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!resp.ok) { addLog('Paymaster error ' + resp.status); pendingTxCount--; updatePendingDisplay(); return; }
-            const data = await resp.json();
-            // reduce pendingTxCount if server returns process
-            if (data.status === 'process') { pendingTxCount--; updatePendingDisplay(); }
-            if (data.txSignature) addLog(`Tx: ${data.txSignature}`);
-        } catch (err) { addLog('Tx error: ' + (err.message || err)); pendingTxCount--; updatePendingDisplay(); }
+            if (!resp.ok) { addLog('Paymaster error ' + resp.status); }
+            else {
+                const data = await resp.json();
+                if (data.txSignature) addLog(`Tx: ${data.txSignature}`);
+            }
+        } catch (err) {
+            addLog('Tx error: ' + (err.message || err));
+        } finally {
+            pendingTxCount--;
+            updatePendingDisplay();
+        }
     });
 
     async function sendTx(action, value = null) {
