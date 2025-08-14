@@ -122,7 +122,7 @@
         enemySpawnTimer += delta;
 
         // Tăng dần độ khó theo thời gian
-        difficulty = 1 + elapsedTime / 60000; // mỗi phút +1
+        difficulty = 1 + elapsedTime / 20000; // 
 
         if (enemySpawnTimer > 3000 / difficulty) { 
             spawnEnemy(); 
