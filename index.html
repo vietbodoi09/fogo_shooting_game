@@ -89,18 +89,16 @@ body::before {
   font-weight: bold;
   font-size: 18px;
 }
-
-/* Pending Tx */
 #pendingTx {
   position: absolute;
-  top: 50px;
-  right: 10px;
-  background: rgba(0,0,0,0.5);
-  padding: 5px 12px;
-  border-radius: 12px;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.4);
+  padding: 5px 15px;
+  border-radius: 20px;
   font-weight: bold;
   font-size: 16px;
-  color: #00ffe0;
 }
 
 /* Game over overlay */
@@ -167,7 +165,7 @@ button:disabled { background: #555; cursor: not-allowed; }
   <div id="gameContainer" class="panel">
     <canvas id="game" width="480" height="640"></canvas>
     <div id="scoreTimer">Score: 0 | Time: 60</div>
-    <div id="pendingTx">Pending Tx: 0</div>
+    <div id="pendingTx">Pending Tx: 0</div> <!-- thêm dòng hiển thị pending tx -->
     <div id="gameOverOverlay">
       <h2>Game Over!</h2>
       <button id="resetBtn">Play Again</button>
