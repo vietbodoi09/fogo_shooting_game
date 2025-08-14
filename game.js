@@ -25,7 +25,7 @@
     let ship, bullets, enemies, enemyBullets, particles;
     let score = 0, timeLeft = 60000, gameOver = true;
     let keysPressed = {}, enemySpawnTimer = 0, difficulty = 1;
-
+    let pendingTxCount = 0; //
     // --- Utils ---
     function addLog(msg) {
         const div = document.createElement('div');
@@ -185,16 +185,43 @@
     window.addEventListener('keydown', e=>{ keysPressed[e.code]=true; });
     window.addEventListener('keyup', e=>{ keysPressed[e.code]=false; });
 
-    window.addEventListener('keydown', async e=>{
-        if(e.code!=='Space'||gameOver) return;
-        if(!playerPubkey){ addLog('Register first'); return; }
-        const body={action:'shoot',player:playerPubkey.toBase58(),timestamp:Date.now(),shipX:ship.x};
-        try{
-            const resp = await fetch(PAYMASTER_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
+    window.addEventListener('keydown', async e => {
+        if (e.code !== 'Space' || gameOver) return;
+        if (!playerPubkey) { addLog('Register first'); return; }
+    
+        // Nếu đang có ít nhất 1 tx chưa trả về, chặn bắn tiếp
+        if (pendingTxCount > 0) {
+            addLog('Wait for previous transaction to confirm');
+            return;
+        }
+    
+        // Bắn đạn ngay
+        bullets.push({ x: ship.x + ship.width / 2 - 5, y: ship.y - 10, width: 10, height: 18 });
+    
+        // Gửi transaction
+        pendingTxCount++;
+        const body = { action: 'shoot', player: playerPubkey.toBase58(), timestamp: Date.now(), shipX: ship.x };
+        try {
+            const resp = await fetch(PAYMASTER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!resp.ok) {
+                addLog('Paymaster error ' + resp.status);
+                pendingTxCount--;
+                return;
+            }
             const data = await resp.json();
-            if(data.txSignature){ addLog(`Tx: ${data.txSignature}`); bullets.push({ x:ship.x+ship.width/2-2.5, y:ship.y-10, width:10, height:18 }); }
-        }catch(err){ addLog('Tx error: '+(err.message||err)); }
+            if (data.txSignature) {
+                addLog(`Tx: ${data.txSignature}`);
+            }
+        } catch (err) {
+            addLog('Tx error: ' + (err.message || err));
+        } finally {
+            // Khi tx trả về (thành công hay lỗi) → giảm count, cho phép bắn tiếp
+            pendingTxCount--;
+        }
     });
 
     async function sendTx(action,value=null){
