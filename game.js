@@ -14,7 +14,7 @@
     shipImg.src = 'ship.png';
 
     let playerPubkey = null, xHandle = null;
-    let ship = { x: canvas.width/2-25, y: canvas.height-60, width: 50, height: 20, speed: 4 };
+    let ship = { x: canvas.width/2-25, y: canvas.height-60, width: 130, height: 100, speed: 4 };
     let bullets = [], enemies = [], enemyBullets = [], particles = [];
     let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {};
     let enemySpawnTimer = 0, difficulty = 1;
