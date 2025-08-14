@@ -94,24 +94,23 @@
         ctx.fillStyle = '#02111a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw ship
         if (shipImg.complete) ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
 
-        // Draw player bullets (to hơn)
+        // --- Player bullets (to hơn) ---
         ctx.fillStyle = '#ffde59';
         bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-        // Draw enemies
+        // --- Enemies ---
         enemies.forEach(e => {
             if (e.img && e.img.complete) ctx.drawImage(e.img, e.x, e.y, e.width, e.height);
             else { ctx.fillStyle = 'red'; ctx.fillRect(e.x, e.y, e.width, e.height); }
         });
 
-        // Draw enemy bullets
+        // --- Enemy bullets ---
         ctx.fillStyle = '#ff6e6e';
         enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-        // Draw particles
+        // --- Particles ---
         particles.forEach(p => {
             ctx.fillStyle = p.color;
             ctx.beginPath();
@@ -126,27 +125,23 @@
         timeLeft -= delta;
         enemySpawnTimer += delta;
 
-        // Spawn enemy
         if (enemySpawnTimer > 2500 / difficulty) { spawnEnemy(); enemySpawnTimer = 0; }
 
-        // Player movement
+        // --- Player movement ---
         if (keysPressed.ArrowLeft) { ship.x -= ship.speed; if (ship.x < 0) ship.x = 0; }
         if (keysPressed.ArrowRight) { ship.x += ship.speed; if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width; }
 
-        // Player bullets
+        // --- Player bullets ---
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
-            b.y -= 8;
+            b.y -= 12;  // to hơn
             if (b.y < -b.height) { bullets.splice(i, 1); continue; }
             for (let j = enemies.length - 1; j >= 0; j--) {
                 const e = enemies[j];
                 if (isColliding(b, e)) {
                     spawnParticles(e.x + e.width / 2, e.y + e.height / 2, 'yellow');
-
-                    // Xóa đạn enemy nằm trong vùng enemy vừa chết
-                    enemyBullets = enemyBullets.filter(eb => !(eb.x >= e.x && eb.x <= e.x + e.width &&
-                                                               eb.y >= e.y && eb.y <= e.y + e.height));
-
+                    // Xóa đạn enemy thuộc enemy này
+                    enemyBullets = enemyBullets.filter(bullet => bullet.ownerEnemy !== e);
                     enemies.splice(j, 1);
                     bullets.splice(i, 1);
                     score++;
@@ -155,7 +150,7 @@
             }
         }
 
-        // Enemy bullets
+        // --- Enemy bullets ---
         for (let i = enemyBullets.length - 1; i >= 0; i--) {
             const b = enemyBullets[i];
             b.y += b.speed;
@@ -163,7 +158,7 @@
             if (isColliding(b, ship)) { gameOver = true; gameOverOverlay.classList.add('visible'); sendTx('score', score); break; }
         }
 
-        // Enemies
+        // --- Enemies ---
         for (let i = enemies.length - 1; i >= 0; i--) {
             const e = enemies[i];
             e.y += e.speed; e.x += e.direction * 1.5;
@@ -173,16 +168,24 @@
             e.shootTimer += delta;
             if (e.shootTimer > e.shootInterval) {
                 e.shootTimer = 0;
-                enemyBullets.push({ x: e.x + e.width / 2 - 5, y: e.y + e.height, width: 10, height: 20, speed: 2 + Math.random() * 2 });
+                enemyBullets.push({
+                    x: e.x + e.width / 2 - 5,
+                    y: e.y + e.height,
+                    width: 10,
+                    height: 20,
+                    speed: 2 + Math.random() * 2,
+                    ownerEnemy: e
+                });
             }
 
             if (isColliding(ship, e)) { gameOver = true; gameOverOverlay.classList.add('visible'); sendTx('score', score); break; }
         }
 
-        // Particles
+        // --- Particles ---
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i];
-            p.x += p.vx; p.y += p.vy;
+            p.x += p.vx;
+            p.y += p.vy;
             p.life--;
             if (p.life <= 0) particles.splice(i, 1);
         }
@@ -211,7 +214,8 @@
         if (!playerPubkey) { addLog('Register first'); return; }
         if (pendingTxCount >= MAX_PENDING_TX) { addLog('Wait for pending transaction(s) to process.'); return; }
 
-        bullets.push({ x: ship.x + ship.width / 2 - 5, y: ship.y - 20, width: 10, height: 20 }); // đạn to
+        // Player bullet lớn hơn
+        bullets.push({ x: ship.x + ship.width / 2 - 5, y: ship.y - 20, width: 10, height: 20 });
 
         pendingTxCount++;
         updatePendingDisplay();
@@ -232,6 +236,7 @@
         }
     });
 
+    // --- Tx & leaderboard ---
     async function sendTx(action, value = null) {
         if (!playerPubkey) { addLog('Register first'); return; }
         try {
@@ -259,6 +264,7 @@
         } catch (e) { addLog('Leaderboard error: ' + (e.message || e)); }
     }
 
+    // --- Register & reset ---
     registerBtn.addEventListener('click', async () => {
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
