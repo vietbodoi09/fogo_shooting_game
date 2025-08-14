@@ -23,8 +23,6 @@
     let score = 0, timeLeft = 60000, gameOver = true, keysPressed = {};
     let enemySpawnTimer = 0, difficulty = 1;
 
-    const connection = new solanaWeb3.Connection("https://testnet.fogo.io", "confirmed");
-
     function addLog(msg){
         const div = document.createElement('div'); 
         div.className = 'logEntry'; 
@@ -102,83 +100,79 @@
     }
 
     function update(delta){
-        // Nếu game đang chơi mới giảm timeLeft
-        if(!gameOver) timeLeft -= delta;
-
-        if(!gameOver && timeLeft <= 0){
-            gameOver = true;
-            gameOverOverlay.classList.add('visible');
-            sendTx('score', score);
-        }
-
-        scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(timeLeft/1000)}`;
-        difficulty = 1 + (60000 - timeLeft)/60000;
-
-        // Spawn enemies **chỉ khi game chưa over**
         if(!gameOver){
+            timeLeft -= delta;
             enemySpawnTimer += delta;
-            if(enemySpawnTimer > 1200/difficulty){ 
-                spawnEnemy(); 
-                enemySpawnTimer = 0; 
-            }
-        }
 
-        if(gameOver) return; // Skip all updates khi gameOver
+            // spawn enemy
+            if(enemySpawnTimer > 1200/difficulty){ spawnEnemy(); enemySpawnTimer=0; }
 
-        // Player bullets
-        bullets.forEach((b,i)=>{
-            b.y -= 8;
-            if(b.y < -b.height) bullets.splice(i,1);
-            enemies.forEach((e,j)=>{
-                if(isColliding(b,e)){
-                    bullets.splice(i,1); enemies.splice(j,1);
-                    score++;
-                    spawnParticles(e.x+e.width/2, e.y+e.height/2,'yellow');
-                    enemyBullets = enemyBullets.filter(eb=>!(eb.x>e.x && eb.x<e.x+e.width && eb.y>e.y && eb.y<e.y+e.height));
+            // player bullets
+            bullets.forEach((b,i)=>{
+                b.y -= 8;
+                if(b.y < -b.height) bullets.splice(i,1);
+                enemies.forEach((e,j)=>{
+                    if(isColliding(b,e)){
+                        bullets.splice(i,1); enemies.splice(j,1);
+                        score++;
+                        spawnParticles(e.x+e.width/2, e.y+e.height/2,'yellow');
+                        enemyBullets = enemyBullets.filter(eb=>!(eb.x>e.x && eb.x<e.x+e.width && eb.y>e.y && eb.y<e.y+e.height));
+                    }
+                });
+            });
+
+            // enemy bullets
+            enemyBullets.forEach((b,i)=>{
+                b.y += b.speed;
+                if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
+                if(isColliding(b,ship)){
+                    gameOver=true;
+                    gameOverOverlay.classList.add('visible');
+                    sendTx('score',score);
                 }
             });
-        });
 
-        // Enemy bullets
-        enemyBullets.forEach((b,i)=>{
-            b.y += b.speed;
-            if(b.y>canvas.height+b.height) enemyBullets.splice(i,1);
-            if(isColliding(b,ship)){
-                gameOver=true;
+            // enemies
+            enemies.forEach(e=>{
+                e.y += e.speed;
+                e.x += e.direction*1.5;
+                if(e.x<0 || e.x+e.width>canvas.width) e.direction*=-1;
+
+                e.shootTimer += delta;
+                if(e.shootTimer>e.shootInterval){
+                    e.shootTimer=0;
+                    const bulletSpeed = 2 + Math.random()*2;
+                    enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed });
+                }
+
+                if(isColliding(ship,e)){
+                    gameOver=true;
+                    gameOverOverlay.classList.add('visible');
+                    sendTx('score',score);
+                }
+            });
+
+            // particles
+            particles.forEach((p,i)=>{
+                p.x += p.vx; p.y += p.vy; p.life--;
+                if(p.life<=0) particles.splice(i,1);
+            });
+
+            // player movement
+            if(keysPressed.ArrowLeft){ ship.x -= ship.speed; if(ship.x<0) ship.x=0; }
+            if(keysPressed.ArrowRight){ ship.x += ship.speed; if(ship.x+ship.width>canvas.width) ship.x=canvas.width-ship.width; }
+
+            // check timeLeft
+            if(timeLeft <= 0){
+                gameOver = true;
                 gameOverOverlay.classList.add('visible');
                 sendTx('score',score);
             }
-        });
 
-        // Enemies
-        enemies.forEach(e=>{
-            e.y += e.speed;
-            e.x += e.direction*1.5;
-            if(e.x<0 || e.x+e.width>canvas.width) e.direction*=-1;
+            difficulty = 1 + (60000 - timeLeft)/60000;
+        }
 
-            e.shootTimer += delta;
-            if(e.shootTimer>e.shootInterval){
-                e.shootTimer=0;
-                const bulletSpeed = 2 + Math.random()*2;
-                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:6, height:12, speed:bulletSpeed });
-            }
-
-            if(isColliding(ship,e)){
-                gameOver=true;
-                gameOverOverlay.classList.add('visible');
-                sendTx('score',score);
-            }
-        });
-
-        // Particles
-        particles.forEach((p,i)=>{
-            p.x += p.vx; p.y += p.vy; p.life--;
-            if(p.life<=0) particles.splice(i,1);
-        });
-
-        // Player movement
-        if(keysPressed.ArrowLeft){ ship.x -= ship.speed; if(ship.x<0) ship.x=0; }
-        if(keysPressed.ArrowRight){ ship.x += ship.speed; if(ship.x+ship.width>canvas.width) ship.x=canvas.width-ship.width; }
+        scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(Math.max(timeLeft,0)/1000)}`;
     }
 
     function gameLoop(ts){
@@ -186,14 +180,12 @@
         window.lastTs = ts;
         update(delta);
         draw();
-        requestAnimationFrame(gameLoop); // Chạy liên tục 1 loop duy nhất
+        requestAnimationFrame(gameLoop);
     }
 
-    // Key handlers
     window.addEventListener('keydown', e => { keysPressed[e.code]=true; });
     window.addEventListener('keyup', e => { keysPressed[e.code]=false; });
 
-    // Shooting
     window.addEventListener('keydown', async e => {
         if(e.code!=='Space') return;
         if(!playerPubkey){ addLog('Register first'); return; }
@@ -237,19 +229,18 @@
         } catch(e){ addLog('Leaderboard error: '+(e.message||e)); }
     }
 
-    // Register
     registerBtn.addEventListener('click', async ()=>{
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
         if(!walletAddr || !xHandleVal){ addLog('Enter X handle and wallet'); return; }
-    
+
         let pubkey;
         try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } 
         catch(e){ addLog('Invalid wallet address'); return; }
-    
+
         playerPubkey = pubkey; 
         xHandle = xHandleVal;
-    
+
         try{
             const body = { action:'register', player:playerPubkey.toBase58(), xHandle };
             const resp = await fetch(PAYMASTER_URL, {
@@ -264,7 +255,8 @@
                 registerBtn.disabled = true;
                 walletInput.disabled = true;
                 xInput.disabled = true;
-                resetGame(); // Start game ngay sau khi register
+
+                resetGame(); // start game
             } else { addLog('No tx returned from paymaster'); }
         } catch(err){ addLog('Register error: '+(err.message||err)); }
     });
@@ -275,6 +267,6 @@
     fetchLeaderboard();
     setInterval(fetchLeaderboard,5000);
 
-    // Start game loop **chỉ 1 lần duy nhất**
+    // Start game loop 1 lần duy nhất
     requestAnimationFrame(gameLoop);
 })();
