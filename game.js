@@ -1,6 +1,6 @@
 (async () => {
     const PAYMASTER_URL = "https://fogoshooting.shop:3000/sponsor";
-    const MAX_PENDING_TX = 8;
+    const MAX_PENDING_TX = 5;
 
     // --- Canvas & UI ---
     const canvas = document.getElementById('game');
@@ -24,8 +24,8 @@
     // --- Game state ---
     let playerPubkey = null, xHandle = null;
     let ship, bullets, enemies, enemyBullets, particles;
-    let score = 0, timeLeft = 60000, gameOver = true;
-    let keysPressed = {}, enemySpawnTimer = 0, difficulty = 1;
+    let score = 0, gameOver = true;
+    let keysPressed = {}, enemySpawnTimer = 0, difficulty = 1, elapsedTime = 0;
     let pendingTxCount = 0;
 
     // --- Utils ---
@@ -42,8 +42,7 @@
     }
 
     function isColliding(a, b) {
-        return a.x < b.x + b.width && a.x + a.width > b.x &&
-               a.y < b.y + b.height && a.y + a.height > b.y;
+        return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
     }
 
     // --- Game logic ---
@@ -54,9 +53,9 @@
         enemyBullets = [];
         particles = [];
         score = 0;
-        timeLeft = 60000;
         gameOver = false;
         enemySpawnTimer = 0;
+        elapsedTime = 0;
         difficulty = 1;
         gameOverOverlay.classList.remove('visible');
         addLog('Game reset.');
@@ -71,7 +70,8 @@
             speed, shootTimer: 0,
             shootInterval: 1500 + Math.random() * 1000 / difficulty,
             direction: Math.random() < 0.5 ? 1 : -1,
-            img: enemyImg
+            img: enemyImg,
+            bullets: []
         });
     }
 
@@ -96,21 +96,17 @@
 
         if (shipImg.complete) ctx.drawImage(shipImg, ship.x, ship.y, ship.width, ship.height);
 
-        // --- Player bullets (to hơn) ---
         ctx.fillStyle = '#ffde59';
         bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-        // --- Enemies ---
         enemies.forEach(e => {
             if (e.img && e.img.complete) ctx.drawImage(e.img, e.x, e.y, e.width, e.height);
             else { ctx.fillStyle = 'red'; ctx.fillRect(e.x, e.y, e.width, e.height); }
         });
 
-        // --- Enemy bullets ---
         ctx.fillStyle = '#ff6e6e';
         enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-        // --- Particles ---
         particles.forEach(p => {
             ctx.fillStyle = p.color;
             ctx.beginPath();
@@ -122,26 +118,35 @@
     function update(delta) {
         if (gameOver) return;
 
-        timeLeft -= delta;
+        elapsedTime += delta;
         enemySpawnTimer += delta;
 
-        if (enemySpawnTimer > 2500 / difficulty) { spawnEnemy(); enemySpawnTimer = 0; }
+        // Tăng dần độ khó theo thời gian
+        difficulty = 1 + elapsedTime / 60000; // mỗi phút +1
 
-        // --- Player movement ---
+        if (enemySpawnTimer > 3000 / difficulty) { 
+            spawnEnemy(); 
+            enemySpawnTimer = 0; 
+        }
+
+        // Player movement
         if (keysPressed.ArrowLeft) { ship.x -= ship.speed; if (ship.x < 0) ship.x = 0; }
         if (keysPressed.ArrowRight) { ship.x += ship.speed; if (ship.x + ship.width > canvas.width) ship.x = canvas.width - ship.width; }
 
-        // --- Player bullets ---
+        // Player bullets
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
-            b.y -= 12;  // to hơn
+            b.y -= 10; // đạn to hơn
             if (b.y < -b.height) { bullets.splice(i, 1); continue; }
             for (let j = enemies.length - 1; j >= 0; j--) {
                 const e = enemies[j];
                 if (isColliding(b, e)) {
                     spawnParticles(e.x + e.width / 2, e.y + e.height / 2, 'yellow');
-                    // Xóa đạn enemy thuộc enemy này
-                    enemyBullets = enemyBullets.filter(bullet => bullet.ownerEnemy !== e);
+                    // Xoá tất cả đạn của enemy khi nó chết
+                    e.bullets.forEach(bullet => {
+                        const idx = enemyBullets.indexOf(bullet);
+                        if (idx > -1) enemyBullets.splice(idx, 1);
+                    });
                     enemies.splice(j, 1);
                     bullets.splice(i, 1);
                     score++;
@@ -150,15 +155,20 @@
             }
         }
 
-        // --- Enemy bullets ---
+        // Enemy bullets
         for (let i = enemyBullets.length - 1; i >= 0; i--) {
             const b = enemyBullets[i];
             b.y += b.speed;
             if (b.y > canvas.height + b.height) { enemyBullets.splice(i, 1); continue; }
-            if (isColliding(b, ship)) { gameOver = true; gameOverOverlay.classList.add('visible'); sendTx('score', score); break; }
+            if (isColliding(b, ship)) { 
+                gameOver = true; 
+                gameOverOverlay.classList.add('visible'); 
+                sendTx('score', score); 
+                break; 
+            }
         }
 
-        // --- Enemies ---
+        // Enemies
         for (let i = enemies.length - 1; i >= 0; i--) {
             const e = enemies[i];
             e.y += e.speed; e.x += e.direction * 1.5;
@@ -168,33 +178,28 @@
             e.shootTimer += delta;
             if (e.shootTimer > e.shootInterval) {
                 e.shootTimer = 0;
-                enemyBullets.push({
-                    x: e.x + e.width / 2 - 5,
-                    y: e.y + e.height,
-                    width: 10,
-                    height: 20,
-                    speed: 2 + Math.random() * 2,
-                    ownerEnemy: e
-                });
+                const bullet = { x: e.x + e.width / 2 - 3, y: e.y + e.height, width: 6, height: 16, speed: 2 + Math.random() * 2 };
+                enemyBullets.push(bullet);
+                e.bullets.push(bullet);
             }
 
-            if (isColliding(ship, e)) { gameOver = true; gameOverOverlay.classList.add('visible'); sendTx('score', score); break; }
+            if (isColliding(ship, e)) { 
+                gameOver = true; 
+                gameOverOverlay.classList.add('visible'); 
+                sendTx('score', score); 
+                break; 
+            }
         }
 
-        // --- Particles ---
-        for (let i = particles.length - 1; i >= 0; i--) {
-            const p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life--;
-            if (p.life <= 0) particles.splice(i, 1);
+        // Particles
+        for (let i = particles.length - 1; i >= 0; i--) { 
+            const p = particles[i]; 
+            p.x += p.vx; p.y += p.vy; p.life--; 
+            if (p.life <= 0) particles.splice(i, 1); 
         }
 
-        scoreTimerEl.textContent = `Score: ${score} | Time: ${Math.ceil(Math.max(timeLeft, 0) / 1000)}`;
+        scoreTimerEl.textContent = `Score: ${score}`; // chỉ hiện score
         updatePendingDisplay();
-        difficulty = 1 + (60000 - timeLeft) / 60000;
-
-        if (timeLeft <= 0) { gameOver = true; gameOverOverlay.classList.add('visible'); sendTx('score', score); }
     }
 
     function gameLoop(ts) {
@@ -214,8 +219,7 @@
         if (!playerPubkey) { addLog('Register first'); return; }
         if (pendingTxCount >= MAX_PENDING_TX) { addLog('Wait for pending transaction(s) to process.'); return; }
 
-        // Player bullet lớn hơn
-        bullets.push({ x: ship.x + ship.width / 2 - 5, y: ship.y - 20, width: 10, height: 20 });
+        bullets.push({ x: ship.x + ship.width / 2 - 5, y: ship.y - 10, width: 10, height: 20 }); // đạn nhân vật lớn hơn
 
         pendingTxCount++;
         updatePendingDisplay();
@@ -236,7 +240,6 @@
         }
     });
 
-    // --- Tx & leaderboard ---
     async function sendTx(action, value = null) {
         if (!playerPubkey) { addLog('Register first'); return; }
         try {
@@ -264,7 +267,6 @@
         } catch (e) { addLog('Leaderboard error: ' + (e.message || e)); }
     }
 
-    // --- Register & reset ---
     registerBtn.addEventListener('click', async () => {
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
