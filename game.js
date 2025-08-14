@@ -56,7 +56,7 @@
     }
 
     function spawnEnemy() {
-        const size = 60;
+        const size = 50;
         const x = Math.random() * (canvas.width - size);
         const speed = 1 + Math.random() * difficulty;
 
@@ -159,7 +159,7 @@
             e.shootTimer+=delta;
             if(e.shootTimer>e.shootInterval){
                 e.shootTimer=0;
-                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:10, height:18, speed:2+Math.random()*2 });
+                enemyBullets.push({ x:e.x+e.width/2-3, y:e.y+e.height, width:7, height:13, speed:2+Math.random()*2 });
             }
             if(isColliding(ship,e)){ gameOver=true; gameOverOverlay.classList.add('visible'); sendTx('score',score); break; }
         }
