@@ -239,23 +239,42 @@
         const walletAddr = walletInput.value.trim();
         const xHandleVal = xInput.value.trim();
         if(!walletAddr || !xHandleVal){ addLog('Enter X handle and wallet'); return; }
-
+    
         let pubkey;
         try{ pubkey = new solanaWeb3.PublicKey(walletAddr); } 
         catch(e){ addLog('Invalid wallet address'); return; }
-
-        const balance = await connection.getBalance(pubkey);
-        if(balance/1e9 < 0.1){ addLog('Wallet must have ≥0.1 FOGO'); return; }
-
-        playerPubkey = pubkey; xHandle = xHandleVal;
-
-        await sendTx('register');
-        addLog(`Registered ${xHandle} (${playerPubkey.toBase58()})`);
-        registerBtn.disabled=true; walletInput.disabled=true; xInput.disabled=true;
-
-        resetGame();
-        requestAnimationFrame(gameLoop);
+    
+        playerPubkey = pubkey; 
+        xHandle = xHandleVal;
+    
+        // Gửi register tới paymaster
+        try{
+            const body = { action:'register', player:playerPubkey.toBase58(), xHandle };
+            const resp = await fetch(PAYMASTER_URL, {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+    
+            if(!resp.ok){ addLog('Paymaster error '+resp.status); return; }
+    
+            const data = await resp.json();
+            if(data.txSignature){
+                addLog(`Registered ${xHandle} (${playerPubkey.toBase58()}) | Tx: ${data.txSignature}`);
+    
+                // --- Start game ngay khi nhận txSignature ---
+                registerBtn.disabled = true;
+                walletInput.disabled = true;
+                xInput.disabled = true;
+                resetGame();
+                requestAnimationFrame(gameLoop);
+            } else {
+                addLog('No tx returned from paymaster');
+            }
+    
+        } catch(err){ addLog('Register error: ' + (err.message||err)); }
     });
+
 
     resetBtn.addEventListener('click',()=>{ resetGame(); requestAnimationFrame(gameLoop); });
 
