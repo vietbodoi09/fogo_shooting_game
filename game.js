@@ -1,6 +1,6 @@
 (async () => {
     const PAYMASTER_URL = "https://fogoshooting.shop:3000/sponsor";
-    const MAX_PENDING_TX = 15;
+    const MAX_PENDING_TX = 100;
 
     // --- Canvas & UI ---
     const canvas = document.getElementById('game');
