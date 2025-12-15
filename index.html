@@ -1,187 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fogo Shooting Game</title>
-
-<!-- Favicon -->
-<link rel="icon" href="./favicon.ico" type="image/x-icon" />
-
-<!-- Google Font -->
-<link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
-
-<!-- Solana Web3.js -->
-<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-
-<style>
-body {
-  margin: 0;
-  font-family: 'Audiowide', cursive;
-  color: white;
-  background: url('background.jpg') center/cover no-repeat fixed;
-  overflow: hidden;
-}
-body::before {
-  content: "";
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(4px);
-  z-index: -1;
-}
-
-/* Layout */
-.main-layout {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  padding: 30px;
-  flex-wrap: wrap;
-}
-
-/* Panel */
-.panel {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* Leaderboard */
-.leaderboard {
-  width: 260px;
-}
-.leaderboard h3 { text-align: center; margin-bottom: 15px; }
-#leaderboardList { list-style: none; padding: 0; margin: 0; }
-#leaderboardList li {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  background: rgba(0,0,0,0.3);
-  border-radius: 8px;
-  font-size: 15px;
-  color: #fff;
-  font-weight: 600;
-}
-#leaderboardList li span:first-child { color: #00ffe0; }
-#leaderboardList li span:last-child { color: #ffde59; }
-
-/* Game container */
-#gameContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-#game { border-radius: 12px; background: rgba(2,17,26,0.85); }
-#scoreTimer {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.4);
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-weight: bold;
-  font-size: 18px;
-}
-#pendingTx {
-  position: absolute;
-  top: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.4);
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-/* Game over overlay */
-#gameOverOverlay {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  background: rgba(0,0,0,0.85);
-  padding: 25px 40px;
-  border-radius: 15px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  z-index: 5;
-  visibility: hidden;
-}
-#gameOverOverlay.visible { visibility: visible; }
-#gameOverOverlay h2 { margin: 0; font-size: 28px; }
-
-/* Buttons */
-button {
-  border-radius: 12px;
-  border: none;
-  padding: 12px 18px;
-  font-size: 16px;
-  font-weight: bold;
-  background: linear-gradient(90deg, #ff4b2b, #ff416c);
-  color: white;
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.3s ease;
-}
-button:hover { transform: scale(1.07); background: linear-gradient(90deg, #ff416c, #ff4b2b); }
-button:disabled { background: #555; cursor: not-allowed; }
-
-/* Controls panel */
-.controls-panel { width: 260px; }
-.controls-panel input { width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 10px; border: none; font-size: 14px; }
-#logBox {
-  margin-top: 15px;
-  padding: 10px;
-  background: rgba(0,0,0,0.4);
-  border-radius: 10px;
-  min-height: 80px;
-  font-size: 14px;
-  overflow-y: auto;
-  color: #fff;
-  font-weight: 600;
-}
-#logBox .logEntry { margin-bottom: 4px; padding: 2px 0; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FurboGame - Fogo Mainnet Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Fogo Sessions SDK -->
+    <script src="https://unpkg.com/@fogo/sessions-sdk-react@0.0.28/dist/umd/index.min.js"></script>
+    <!-- Solana Web3 -->
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
 </head>
 <body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎮 FURBO GAME</h1>
+            <p class="subtitle">Real-time blockchain game on Fogo Mainnet</p>
+        </div>
 
-<div class="main-layout">
-  <!-- Leaderboard -->
-  <aside class="panel leaderboard">
-    <h3>Leaderboard</h3>
-    <ol id="leaderboardList"></ol>
-  </aside>
+        <!-- Main Game Area -->
+        <div class="game-area">
+            <!-- Left Panel: Leaderboard -->
+            <div class="panel left-panel">
+                <h3>🏆 LEADERBOARD</h3>
+                <div class="leaderboard">
+                    <div class="player-row header-row">
+                        <span>Player</span>
+                        <span>Score</span>
+                    </div>
+                    <div id="leaderboardList"></div>
+                </div>
+                <div class="game-stats">
+                    <h4>📊 Game Stats</h4>
+                    <div class="stats-grid">
+                        <div>Total Players: <span id="totalPlayers">0</span></div>
+                        <div>Total Shots: <span id="totalShots">0</span></div>
+                        <div>Enemies Killed: <span id="enemiesKilled">0</span></div>
+                        <div>Games Played: <span id="gamesPlayed">0</span></div>
+                    </div>
+                </div>
+            </div>
 
-  <!-- Game -->
-  <div id="gameContainer" class="panel">
-    <canvas id="game" width="480" height="640"></canvas>
-    <div id="scoreTimer">Score: 0 | Time: 0s</div>
-    <div id="pendingTx">Pending Tx: 0</div>
-    <div id="gameOverOverlay">
-      <h2>Game Over!</h2>
-      <button id="resetBtn">Play Again</button>
+            <!-- Center Panel: Game Canvas -->
+            <div class="panel center-panel">
+                <div class="game-header">
+                    <div class="score-time">
+                        <span>SCORE: <span id="score">0</span></span>
+                        <span>TIME: <span id="time">0</span>s</span>
+                    </div>
+                    <div class="chain-status">
+                        <span id="chainStatus">🔴 Not Connected</span>
+                    </div>
+                </div>
+                
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
+                
+                <div class="game-controls">
+                    <button id="startBtn" class="btn-primary">🚀 START GAME</button>
+                    <button id="resetBtn" class="btn-secondary">🔄 RESET</button>
+                    <div class="instructions">
+                        <p>CONTROLS: ← → Move | SPACE Shoot</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Fogo Sessions & Controls -->
+            <div class="panel right-panel">
+                <h3>🔗 FOGO SESSIONS</h3>
+                
+                <!-- Session Connection -->
+                <div class="session-section">
+                    <div class="session-status" id="sessionStatus">
+                        <div class="status-indicator"></div>
+                        <span>Disconnected</span>
+                    </div>
+                    <button id="connectBtn" class="btn-connect">🎮 Connect Fogo Session</button>
+                    
+                    <div class="wallet-info" id="walletInfo" style="display:none">
+                        <p>Wallet: <span id="walletAddress">...</span></p>
+                        <p>Session: <span id="sessionAddress">...</span></p>
+                    </div>
+                </div>
+
+                <!-- Player Registration -->
+                <div class="registration-section">
+                    <h4>📝 REGISTER PLAYER</h4>
+                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+                    <button id="registerBtn" class="btn-register" disabled>Register</button>
+                    <p class="hint">Register to save your score on-chain!</p>
+                </div>
+
+                <!-- Performance Dashboard -->
+                <div class="performance-section">
+                    <h4>⚡ CHAIN PERFORMANCE</h4>
+                    <div class="metrics">
+                        <div class="metric">
+                            <span class="label">Moves Sent:</span>
+                            <span class="value" id="movesSent">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="label">Shots Sent:</span>
+                            <span class="value" id="shotsSent">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="label">Avg Confirm:</span>
+                            <span class="value" id="avgConfirm">0ms</span>
+                        </div>
+                        <div class="metric">
+                            <span class="label">Success Rate:</span>
+                            <span class="value" id="successRate">100%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="label">Pending TX:</span>
+                            <span class="value" id="pendingTx">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="speedometer">
+                        <div class="speed-label">Chain Speed</div>
+                        <div class="speed-bar-container">
+                            <div class="speed-bar" id="speedBar"></div>
+                        </div>
+                        <div class="speed-labels">
+                            <span>Slow</span>
+                            <span>Fast</span>
+                            <span>⚡ Extreme</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Log -->
+                <div class="log-section">
+                    <h4>📜 TRANSACTION LOG</h4>
+                    <div class="log-box" id="logBox">
+                        <div class="log-entry">Ready to connect...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Powered by <strong>Catcake</strong> • Gasless via Fogo Sessions • 
+            <a href="#" id="benchmarkBtn">Run Speed Test</a></p>
+            <p class="note">⚠️ Ensure you have Fogo Sessions connected for gasless transactions</p>
+        </div>
     </div>
-  </div>
 
-  <!-- Controls -->
-  <div class="panel controls-panel">
-    <input id="xInput" type="text" placeholder="Your X handle" />
-    <input id="walletInput" type="text" placeholder="Your wallet address" />
-    <button id="registerBtn">Register</button>
-    <div id="logBox"></div>
-  </div>
-</div>
-
-<!-- game.js -->
-<script src="game.js"></script>
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="game.js"></script>
+    
+    <script>
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('FurboGame loaded successfully!');
+            // Add any additional initialization here
+        });
+    </script>
 </body>
 </html>
